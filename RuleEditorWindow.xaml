@@ -1,0 +1,284 @@
+<Window x:Class="Valve.RuleEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Rule Editor" Height="660" Width="580"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource Bg}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+
+    <Window.Resources>
+        <x:Array x:Key="ScheduleActions" Type="sys:String" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+            <sys:String>Start</sys:String>
+            <sys:String>Stop</sys:String>
+            <sys:String>Reset</sys:String>
+        </x:Array>
+    </Window.Resources>
+
+    <Grid Margin="16,14,16,14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ================= target ================= -->
+        <Border Grid.Row="0" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                CornerRadius="6" Padding="12,10" Margin="0,0,0,10">
+            <StackPanel>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="88" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Rule name" Style="{StaticResource LabelText}" VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1" x:Name="NameBox" Style="{StaticResource DarkTextBox}" Padding="8,5" />
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="88" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Target" Style="{StaticResource LabelText}" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1" x:Name="TargetTypeBox" Margin="0,0,8,0"
+                              Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                              BorderBrush="{StaticResource Line}" SelectionChanged="TargetType_Changed">
+                        <ComboBoxItem Content="Application" Tag="Application" IsSelected="True" />
+                        <ComboBoxItem Content="Filter" Tag="Filter" />
+                        <ComboBoxItem Content="Zone" Tag="Zone" />
+                        <ComboBoxItem Content="Whole computer" Tag="WholeComputer" />
+                    </ComboBox>
+                    <TextBox Grid.Column="2" x:Name="TargetValueBox" Style="{StaticResource DarkTextBox}"
+                             Padding="8,5" ToolTip="Application name, filter name or zone" />
+                    <ComboBox Grid.Column="2" x:Name="TargetFilterBox" Visibility="Collapsed"
+                              Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                              BorderBrush="{StaticResource Line}" />
+                </Grid>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="88" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Zone" Style="{StaticResource LabelText}" VerticalAlignment="Center" ToolTip="Traffic zone this rule applies to (blank = all zones)" />
+                    <ComboBox Grid.Column="1" x:Name="ZoneBox" Margin="0,0,8,0"
+                              Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                              BorderBrush="{StaticResource Line}">
+                        <ComboBoxItem Content="All zones (blank)" Tag="All" IsSelected="True" />
+                        <ComboBoxItem Content="Local" Tag="Local" />
+                        <ComboBoxItem Content="Internet" Tag="Internet" />
+                    </ComboBox>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ================= tabs ================= -->
+        <TabControl Grid.Row="1" Background="Transparent" BorderBrush="{StaticResource Line}">
+            <TabItem Header="Rule">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="4,8,4,4">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="88" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Rule type" Style="{StaticResource LabelText}" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" x:Name="KindBox"
+                                      Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                                      BorderBrush="{StaticResource Line}" SelectionChanged="Kind_Changed">
+                                <ComboBoxItem Content="Limit" Tag="Limit" IsSelected="True" />
+                                <ComboBoxItem Content="Blocker" Tag="Blocker" />
+                                <ComboBoxItem Content="Quota" Tag="Quota" />
+                                <ComboBoxItem Content="Priority" Tag="Priority" />
+                                <ComboBoxItem Content="Ignore" Tag="Ignore" />
+                            </ComboBox>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="88" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Direction" Style="{StaticResource LabelText}" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" x:Name="DirectionBox"
+                                      Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                                      BorderBrush="{StaticResource Line}">
+                                <ComboBoxItem Content="In (download)" Tag="In" />
+                                <ComboBoxItem Content="Out (upload)" Tag="Out" />
+                                <ComboBoxItem Content="Both" Tag="Both" IsSelected="True" />
+                            </ComboBox>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="88" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="HotKey" Style="{StaticResource LabelText}" VerticalAlignment="Center"
+                                       ToolTip="Global hotkey to toggle this rule, e.g. Ctrl+Alt+L" />
+                            <TextBox Grid.Column="1" x:Name="HotKeyBox" Style="{StaticResource DarkTextBox}"
+                                     Padding="8,5" ToolTip="e.g. Ctrl+Alt+L — toggles this rule on/off from anywhere" />
+                        </Grid>
+
+                        <!-- Limit -->
+                        <Border x:Name="LimitPanel" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                CornerRadius="6" Padding="12,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="LIMIT" Style="{StaticResource LabelText}" Margin="0,0,0,8" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBox x:Name="LimitBox" Style="{StaticResource InputBox}" Width="90" Text="500" />
+                                    <TextBlock Text="kbit/s" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                </StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="88" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Apply per" Style="{StaticResource LabelText}" VerticalAlignment="Center" />
+                                    <ComboBox Grid.Column="1" x:Name="LimitTypeBox"
+                                              Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                                              BorderBrush="{StaticResource Line}">
+                                        <ComboBoxItem Content="Application" Tag="PerApplication" IsSelected="True" />
+                                        <ComboBoxItem Content="Process" Tag="PerProcess" />
+                                        <ComboBoxItem Content="Connection" Tag="PerConnection" />
+                                    </ComboBox>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Blocker -->
+                        <Border x:Name="BlockerPanel" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                CornerRadius="6" Padding="12,10" Margin="0,0,0,10" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="BLOCKER" Style="{StaticResource LabelText}" Margin="0,0,0,8" />
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="88" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Action" Style="{StaticResource LabelText}" VerticalAlignment="Center" />
+                                    <ComboBox Grid.Column="1" x:Name="BlockerActionBox"
+                                              Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                                              BorderBrush="{StaticResource Line}">
+                                        <ComboBoxItem Content="Allow" Tag="Allow" />
+                                        <ComboBoxItem Content="Deny" Tag="Deny" IsSelected="True" />
+                                        <ComboBoxItem Content="Ask" Tag="Ask" />
+                                    </ComboBox>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="88" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Weight" Style="{StaticResource LabelText}" VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1" x:Name="WeightBox" Style="{StaticResource InputBox}" Width="70" Text="3"
+                                             HorizontalAlignment="Left" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Quota -->
+                        <Border x:Name="QuotaPanel" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                CornerRadius="6" Padding="12,10" Margin="0,0,0,10" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="QUOTA" Style="{StaticResource LabelText}" Margin="0,0,0,8" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBox x:Name="QuotaBox" Style="{StaticResource InputBox}" Width="90" Text="1024" />
+                                    <TextBlock Text="MB per" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="8,0,8,0" />
+                                    <TextBox x:Name="QuotaDaysBox" Style="{StaticResource InputBox}" Width="50" Text="1" />
+                                    <TextBlock Text="day(s)" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                </StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="88" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="On exceed" Style="{StaticResource LabelText}" VerticalAlignment="Center" />
+                                    <ComboBox Grid.Column="1" x:Name="QuotaExceedBox"
+                                              Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                                              BorderBrush="{StaticResource Line}">
+                                        <ComboBoxItem Content="Block traffic" Tag="Block" IsSelected="True" />
+                                        <ComboBoxItem Content="Notify only" Tag="Notify" />
+                                    </ComboBox>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Priority -->
+                        <Border x:Name="PriorityPanel" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                CornerRadius="6" Padding="12,10" Margin="0,0,0,10" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="PRIORITY" Style="{StaticResource LabelText}" Margin="0,0,0,8" />
+                                <ComboBox x:Name="PriorityLevelBox" Width="180" HorizontalAlignment="Left"
+                                          Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                                          BorderBrush="{StaticResource Line}">
+                                    <ComboBoxItem Content="Critical" Tag="Critical" />
+                                    <ComboBoxItem Content="High" Tag="High" />
+                                    <ComboBoxItem Content="Normal" Tag="Normal" IsSelected="True" />
+                                    <ComboBoxItem Content="Low" Tag="Low" />
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Ignore -->
+                        <Border x:Name="IgnorePanel" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                CornerRadius="6" Padding="12,10" Margin="0,0,0,10" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="IGNORE" Style="{StaticResource LabelText}" Margin="0,0,0,8" />
+                                <ComboBox x:Name="IgnoreModeBox" Width="260" HorizontalAlignment="Left"
+                                          Background="{StaticResource PanelAlt}" Foreground="{StaticResource Text}"
+                                          BorderBrush="{StaticResource Line}">
+                                    <ComboBoxItem Content="Ignore data (bypass everything, not counted)" Tag="IgnoreData" IsSelected="True" />
+                                    <ComboBoxItem Content="Ignore limit (bypass limits, still counted)" Tag="IgnoreLimit" />
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <CheckBox x:Name="EnabledBox" Content="Rule enabled" IsChecked="True"
+                                  Foreground="{StaticResource Text}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Scheduler">
+                <DockPanel Margin="4,8,4,4">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="+ Add entry" Style="{StaticResource Btn}" Padding="10,4" Margin="0,0,8,0" Click="AddScheduleEntry_Click" />
+                        <Button Content="Remove selected" Style="{StaticResource Btn}" Padding="10,4" Click="RemoveScheduleEntry_Click" />
+                        <TextBlock Text="Start/Stop this rule at times of day" Style="{StaticResource LabelText}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </StackPanel>
+                    <DataGrid x:Name="ScheduleGrid" RowHeight="32" AutoGenerateColumns="False" CanUserAddRows="False"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="{DynamicResource Line}">
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Header="Enabled" Width="70" Binding="{Binding Enabled, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridComboBoxColumn Header="Action" Width="90" SelectedItemBinding="{Binding Action}">
+                                <DataGridComboBoxColumn.ElementStyle>
+                                    <Style TargetType="ComboBox">
+                                        <Setter Property="ItemsSource" Value="{StaticResource ScheduleActions}" />
+                                    </Style>
+                                </DataGridComboBoxColumn.ElementStyle>
+                                <DataGridComboBoxColumn.EditingElementStyle>
+                                    <Style TargetType="ComboBox">
+                                        <Setter Property="ItemsSource" Value="{StaticResource ScheduleActions}" />
+                                    </Style>
+                                </DataGridComboBoxColumn.EditingElementStyle>
+                            </DataGridComboBoxColumn>
+                            <DataGridTextColumn Header="Time (HH:mm)" Width="100" Binding="{Binding Time, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn Header="Days" Width="*" Binding="{Binding DaysText, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+
+        <!-- ================= buttons ================= -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="Cancel" Style="{StaticResource Btn}" Padding="16,6" Click="Cancel_Click" />
+            <Button Content="Save" Style="{StaticResource BtnAccent}" Padding="20,6" Margin="8,0,0,0" Click="Save_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

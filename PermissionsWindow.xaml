@@ -1,0 +1,84 @@
+<Window x:Class="Valve.PermissionsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Permissions Tool - User and Security Permissions" Height="520" Width="640" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Bg}" TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
+  <Grid Margin="14">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0" Text="User &amp; Security Permissions" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource Text}" Margin="0,0,0,10" />
+
+    <TabControl Grid.Row="1" Background="{DynamicResource PanelAlt}" BorderBrush="{DynamicResource Line}">
+      <!-- TAB 1: WINDOWS USER ACCOUNTS & GROUPS (Items 16.01, 16.02, 16.02.a, 16.02.b, 16.02.c, 16.03) -->
+      <TabItem Header="Windows User Accounts &amp; Groups" Foreground="{DynamicResource Text}">
+        <Grid Margin="10">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <TextBlock Grid.Row="0" Text="Configure Monitor, Control, and Remote Connect access levels for Windows users and local groups (BUILTIN\Administrators, BUILTIN\Users, Everyone)."
+                     Foreground="{DynamicResource TextDim}" TextWrapping="Wrap" Margin="0,0,0,8" FontSize="11.5" />
+
+          <DataGrid Grid.Row="1" x:Name="WindowsPermGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                    HeadersVisibility="Column" SelectionMode="Single" SelectionUnit="FullRow"
+                    Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}"
+                    BorderBrush="{DynamicResource Line}" RowHeight="28">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Windows User / Group" Binding="{Binding AccountName}" Width="230" />
+              <DataGridCheckBoxColumn Header="Monitor" Binding="{Binding AllowMonitor}" Width="90" />
+              <DataGridCheckBoxColumn Header="Control" Binding="{Binding AllowControl}" Width="90" />
+              <DataGridCheckBoxColumn Header="Remote Connect" Binding="{Binding AllowRemoteConnect}" Width="120" />
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
+            <Button Content="Add Account / Group" Style="{StaticResource Btn}" Padding="10,4" Click="AddWindowsAccount_Click" />
+            <Button Content="Remove" Style="{StaticResource Btn}" Padding="10,4" Margin="8,0,0,0" Click="RemoveWindowsAccount_Click" />
+            <Button Content="Reset Defaults" Style="{StaticResource Btn}" Padding="10,4" Margin="8,0,0,0" Click="ResetWindowsDefaults_Click" />
+          </StackPanel>
+        </Grid>
+      </TabItem>
+
+      <!-- TAB 2: REMOTE COMMAND PERMISSIONS (Sec 15.x) -->
+      <TabItem Header="Remote Command Permissions" Foreground="{DynamicResource Text}">
+        <Grid Margin="10">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <TextBlock Grid.Row="0" Text="State-changing commands (SETBLOCK, RESET, limits, kill) are denied to remote peers unless permitted here. Read-only commands (SNAPSHOT, PING) are always allowed."
+                     Foreground="{DynamicResource TextDim}" Margin="0,0,0,8" TextWrapping="Wrap" FontSize="11.5" />
+
+          <DataGrid Grid.Row="1" x:Name="PermGrid" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
+                    HeadersVisibility="Column" SelectionMode="Single" SelectionUnit="FullRow"
+                    Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}"
+                    BorderBrush="{DynamicResource Line}" RowHeight="28">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Command" Binding="{Binding Type}" Width="150" />
+              <DataGridCheckBoxColumn Header="Allowed" Binding="{Binding Allowed}" Width="90" />
+              <DataGridTextColumn Header="Note" Binding="{Binding Note}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
+            <Button Content="Add Defaults" Style="{StaticResource Btn}" Padding="10,4" Click="AddDefaults_Click" />
+          </StackPanel>
+        </Grid>
+      </TabItem>
+    </TabControl>
+
+    <!-- Save / Apply / Cancel action bar (Item 16.03) -->
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+      <Button Content="Apply &amp; Save" Style="{StaticResource Btn}" Padding="14,4" Click="Save_Click" />
+      <Button Content="Cancel" Style="{StaticResource Btn}" Padding="14,4" Margin="8,0,0,0" Click="Cancel_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

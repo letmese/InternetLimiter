@@ -1,0 +1,284 @@
+<Window x:Class="Valve.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Internet Limiter — Settings" Height="730" Width="660" MinHeight="550" MinWidth="580"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
+        ShowInTaskbar="False"
+        Background="{DynamicResource Bg}"
+        Foreground="{DynamicResource Text}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+
+    <Grid Margin="24,20,24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,16">
+            <Border DockPanel.Dock="Right" Background="{DynamicResource PanelAlt}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
+                <TextBlock x:Name="VersionHeader" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+            </Border>
+            <StackPanel>
+                <TextBlock Text="Internet Limiter Preferences" Foreground="{DynamicResource Text}" FontSize="19" FontWeight="Bold" />
+                <TextBlock Text="Configure long-term history database, blocker policies, Windows startup, and monitoring."
+                           Foreground="{DynamicResource TextDim}" FontSize="12.5" Margin="0,3,0,0" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Main Form Scroll Area -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" FocusVisualStyle="{x:Null}">
+            <StackPanel Margin="0,0,10,0">
+
+                <!-- 1. Traffic Database & Long-term History (Matches NetLimiter) -->
+                <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}"
+                        BorderThickness="1" CornerRadius="6" Padding="16,14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <Border DockPanel.Dock="Right" Background="{DynamicResource SelectionBg}" CornerRadius="3" Padding="6,2">
+                                <TextBlock Text="STORAGE &amp; DB" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                            </Border>
+                            <TextBlock Text="TRAFFIC DATABASE &amp; LONG-TERM HISTORY" Style="{StaticResource LabelText}" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                        </DockPanel>
+                        <TextBlock Text="Internet Limiter records daily per-application traffic aggregates in a high-performance SQLite3 database. Even 10 years of data consumes under 20 MB of disk space."
+                                   Foreground="{DynamicResource TextDim}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                        <!-- Retention Dropdown -->
+                        <DockPanel LastChildFill="False" Margin="0,0,0,10">
+                            <TextBlock Text="History Retention Period:" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox x:Name="RetentionBox" Width="220" Height="30" VerticalAlignment="Center"
+                                      Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}"
+                                      BorderBrush="{DynamicResource Line}">
+                                <ComboBoxItem Content="Keep Forever / Unlimited (Default)" Tag="0" />
+                                <ComboBoxItem Content="14 Days" Tag="14" />
+                                <ComboBoxItem Content="30 Days (1 Month)" Tag="30" />
+                                <ComboBoxItem Content="90 Days (3 Months)" Tag="90" />
+                                <ComboBoxItem Content="180 Days (6 Months)" Tag="180" />
+                                <ComboBoxItem Content="365 Days (1 Year)" Tag="365" />
+                                <ComboBoxItem Content="1095 Days (3 Years)" Tag="1095" />
+                                <ComboBoxItem Content="1825 Days (5 Years)" Tag="1825" />
+                            </ComboBox>
+                        </DockPanel>
+
+                        <!-- DB size warning limit (13.15) -->
+                        <DockPanel LastChildFill="False" Margin="0,0,0,10">
+                            <TextBlock Text="Database size warning limit (MB):" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <TextBox x:Name="DbSizeLimitBox" Width="120" Height="28" VerticalAlignment="Center" Text="2048"
+                                     Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}" BorderBrush="{DynamicResource Line}" />
+                        </DockPanel>
+
+                        <!-- Month statistics start day (26.06) -->
+                        <DockPanel LastChildFill="False" Margin="0,0,0,10">
+                            <TextBlock Text="Month statistics start day (1-28):" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <TextBox x:Name="MonthStartDayBox" Width="80" Height="28" VerticalAlignment="Center" Text="1"
+                                     Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}" BorderBrush="{DynamicResource Line}" />
+                        </DockPanel>
+
+                        <!-- DB Metrics Panel -->
+                        <Border Background="{DynamicResource PanelAlt}" BorderBrush="{DynamicResource Line}"
+                                BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="Database Status:" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource Text}" />
+                                    <TextBlock x:Name="DbStatsText" FontFamily="Consolas" FontSize="11.5" Foreground="#35D39A" HorizontalAlignment="Right" Text="Scanning storage..." />
+                                </DockPanel>
+                                <TextBlock x:Name="DataPathText" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource TextFaint}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="📂 Open History Folder" Style="{StaticResource Btn}" Padding="12,6" Margin="0,0,8,0" Click="OpenHistoryFolder_Click" />
+                            <Button Content="📁 Open App Data Folder" Style="{StaticResource Btn}" Padding="12,6" Click="OpenFolder_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 2. Firewall & Blocker Behavior (Matches NetLimiter) -->
+                <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}"
+                        BorderThickness="1" CornerRadius="6" Padding="16,14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <Border DockPanel.Dock="Right" Background="{DynamicResource SelectionBg}" CornerRadius="3" Padding="6,2">
+                                <TextBlock Text="SECURITY" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                            </Border>
+                            <TextBlock Text="FIREWALL &amp; BLOCKER POLICIES" Style="{StaticResource LabelText}" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                        </DockPanel>
+                        <TextBlock Text="WFP-backed firewall engine enforcing real-time inbound and outbound packet blocking with socket termination."
+                                   Foreground="{DynamicResource TextDim}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                        <CheckBox x:Name="BlockerEnabled" Content="Enable Blocker and active firewall rule filtering"
+                                  Foreground="{DynamicResource Text}" FontSize="12.5" FontWeight="SemiBold" Margin="0,0,0,10" />
+
+                        <DockPanel LastChildFill="False" Margin="0,0,0,10">
+                            <TextBlock Text="Default action for unconfigured apps:" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox x:Name="DefaultBlockerActionBox" Width="180" Height="30" VerticalAlignment="Center"
+                                      Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}"
+                                      BorderBrush="{DynamicResource Line}">
+                                <ComboBoxItem Content="Ask User (Prompt)" Tag="Ask" />
+                                <ComboBoxItem Content="Allow by Default" Tag="Allow" />
+                                <ComboBoxItem Content="Deny / Block" Tag="Deny" />
+                            </ComboBox>
+                        </DockPanel>
+
+                        <CheckBox x:Name="EmergencyBlockAll" Content="Emergency Block: instantly severed TCP connections &amp; catch-all block"
+                                  Foreground="{DynamicResource Text}" FontSize="12.5" Margin="0,0,0,4" />
+                        <TextBlock Text="When activated, Emergency Block installs zero-condition priority filters to immediately cut off traffic and drop existing sockets."
+                                   Foreground="{DynamicResource TextFaint}" FontSize="11.5" TextWrapping="Wrap" Margin="24,0,0,10" />
+
+                        <DockPanel LastChildFill="False" Margin="0,0,0,4">
+                            <TextBlock Text="Temporary allow/deny duration (minutes):" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <TextBox x:Name="TempBlockMinutesBox" Width="80" Height="28" VerticalAlignment="Center" Text="5"
+                                     Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}" BorderBrush="{DynamicResource Line}" />
+                        </DockPanel>
+                        <TextBlock Text="Duration used by the &quot;Allow/Deny for a while&quot; actions in blocker pending requests."
+                                   Foreground="{DynamicResource TextFaint}" FontSize="11.5" TextWrapping="Wrap" Margin="24,0,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. General & Windows Integration (Matches NetLimiter) -->
+                <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}"
+                        BorderThickness="1" CornerRadius="6" Padding="16,14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <Border DockPanel.Dock="Right" Background="{DynamicResource SelectionBg}" CornerRadius="3" Padding="6,2">
+                                <TextBlock Text="INTEGRATION" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                            </Border>
+                            <TextBlock Text="WINDOWS INTEGRATION &amp; APPLICATION BEHAVIOR" Style="{StaticResource LabelText}" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                        </DockPanel>
+                        <TextBlock Text="System startup, background system tray residency, and exit confirmation."
+                                   Foreground="{DynamicResource TextDim}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                        <CheckBox x:Name="StartWithWindows" Content="Start Internet Limiter automatically when Windows starts (Run at login)"
+                                  Foreground="{DynamicResource Text}" FontSize="12.5" Margin="0,0,0,10" />
+                        <CheckBox x:Name="StartMinimized" Content="Start Internet Limiter minimised in the notification tray"
+                                  Foreground="{DynamicResource Text}" FontSize="12.5" Margin="0,0,0,10" />
+                        <CheckBox x:Name="MinimizeToTray" Content="Minimising the window sends it to the system tray"
+                                  Foreground="{DynamicResource Text}" FontSize="12.5" Margin="0,0,0,10" />
+                        <CheckBox x:Name="CloseToTray" Content="Closing the window minimizes to tray instead of quitting"
+                                  Foreground="{DynamicResource Text}" FontSize="12.5" Margin="0,0,0,10" />
+                        <CheckBox x:Name="ConfirmOnExit" Content="Ask for confirmation before quitting Internet Limiter"
+                                  Foreground="{DynamicResource Text}" FontSize="12.5" Margin="0,0,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 4. Telemetry & Polling -->
+                <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}"
+                        BorderThickness="1" CornerRadius="6" Padding="16,14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="TELEMETRY SAMPLING &amp; GEO-LOCATION" Style="{StaticResource LabelText}" FontWeight="Bold" Foreground="{DynamicResource Accent}" Margin="0,0,0,4" />
+                        <TextBlock Text="Socket sampling frequency and IP country/city resolution."
+                                   Foreground="{DynamicResource TextDim}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                        <DockPanel LastChildFill="False" Margin="0,0,0,10">
+                            <TextBlock Text="Refresh rate:" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox x:Name="IntervalBox" Width="180" Height="30" VerticalAlignment="Center"
+                                      Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}"
+                                      BorderBrush="{DynamicResource Line}">
+                                <ComboBoxItem Content="0.5 s  (Fastest)" Tag="0.5" />
+                                <ComboBoxItem Content="1.0 s  (Recommended)" Tag="1" />
+                                <ComboBoxItem Content="2.0 s  (Balanced)" Tag="2" />
+                                <ComboBoxItem Content="5.0 s  (Low CPU)" Tag="5" />
+                            </ComboBox>
+                        </DockPanel>
+
+                        <CheckBox x:Name="ResolveLocations" Content="Resolve remote IP addresses to country and city"
+                                  Foreground="{DynamicResource Text}" FontSize="12.5" Margin="0,0,0,4" />
+                        <TextBlock Text="Uses local offline tables first; public IP queries fallback to ip-api.com. Local LAN addresses are never sent."
+                                   Foreground="{DynamicResource TextFaint}" FontSize="11.5" TextWrapping="Wrap" Margin="24,0,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 5. Measurement Units & Theme -->
+                <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}"
+                        BorderThickness="1" CornerRadius="6" Padding="16,14" Margin="0,0,0,4">
+                    <StackPanel>
+                        <TextBlock Text="DISPLAY UNITS &amp; VISUAL THEME" Style="{StaticResource LabelText}" FontWeight="Bold" Foreground="{DynamicResource Accent}" Margin="0,0,0,4" />
+                        <TextBlock Text="Throughput notation and aesthetic color scheme."
+                                   Foreground="{DynamicResource TextDim}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                        <DockPanel LastChildFill="False" Margin="0,0,0,12">
+                            <TextBlock Text="Visual Theme:" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <ComboBox x:Name="ThemeBox" Width="200" Height="30" VerticalAlignment="Center"
+                                      Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}"
+                                      BorderBrush="{DynamicResource Line}">
+                                <ComboBoxItem Content="🌙 Dark (Obsidian)" Tag="Dark" />
+                                <ComboBoxItem Content="⚡ Cyberpunk (Neon HUD)" Tag="Cyberpunk" />
+                                <ComboBoxItem Content="☀️ Light (Modern Slate)" Tag="Light" />
+                            </ComboBox>
+                        </DockPanel>
+
+                        <RadioButton x:Name="UnitsBytes" GroupName="units" Margin="0,0,0,8" IsChecked="True">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Bytes (KB/s, MB/s, GB)" Foreground="{DynamicResource Text}" FontSize="12.5" FontWeight="SemiBold" />
+                                <TextBlock Text=" — Standard file transfer format" Foreground="{DynamicResource TextDim}" FontSize="12" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="UnitsBits" GroupName="units">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Bits (kbit/s, Mbit/s, Gbit/s)" Foreground="{DynamicResource Text}" FontSize="12.5" FontWeight="SemiBold" />
+                                <TextBlock Text=" — Matches ISP &amp; link speeds" Foreground="{DynamicResource TextDim}" FontSize="12" />
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                </Border>
+
+                <!-- About (Replaces legacy licensing) -->
+                <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}"
+                        BorderThickness="1" CornerRadius="6" Padding="16,14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <Border DockPanel.Dock="Right" Background="{DynamicResource SelectionBg}" CornerRadius="3" Padding="6,2">
+                                <TextBlock Text="APPLICATION" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                            </Border>
+                            <TextBlock Text="ABOUT INTERNET LIMITER" Style="{StaticResource LabelText}" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                        </DockPanel>
+                        <TextBlock Text="Internet Limiter — High-Performance Real-Time Network Traffic Control System for Windows."
+                                   Foreground="{DynamicResource TextDim}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10" />
+                        <DockPanel LastChildFill="False" Margin="0,0,0,4">
+                            <TextBlock Text="Version:" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <TextBlock x:Name="AboutVersionText" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Accent}" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Security: VirusTotal API key & Remote permissions (13.x, 15.x) -->
+                <Border Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}"
+                        BorderThickness="1" CornerRadius="6" Padding="16,14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <Border DockPanel.Dock="Right" Background="{DynamicResource SelectionBg}" CornerRadius="3" Padding="6,2">
+                                <TextBlock Text="SECURITY" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                            </Border>
+                            <TextBlock Text="SECURITY &amp; REMOTE ADMIN" Style="{StaticResource LabelText}" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+                        </DockPanel>
+                        <TextBlock Text="VirusTotal API key enables real in-app malware scanning of selected processes. Without a key, Internet Limiter falls back to opening the VirusTotal website in your browser."
+                                   Foreground="{DynamicResource TextDim}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                        <DockPanel LastChildFill="False" Margin="0,0,0,10">
+                            <TextBlock Text="VirusTotal API Key:" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <TextBox x:Name="VtKeyBox" Width="300" Height="30" VerticalAlignment="Center"
+                                     Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}"
+                                     BorderBrush="{DynamicResource Line}" ToolTip="Get a free key at virustotal.com (API tab). Stored locally only." />
+                        </DockPanel>
+
+                        <DockPanel LastChildFill="False" Margin="0,0,0,4">
+                            <TextBlock Text="Remote command permissions:" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <Button Content="Manage Permissions…" Style="{StaticResource Btn}" Padding="12,5" Click="Permissions_Click" />
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer Action Buttons -->
+        <Border Grid.Row="2" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Style="{StaticResource Btn}" Padding="18,7" FontSize="12.5" Click="Cancel_Click" />
+                <Button Content="Save Settings" Style="{StaticResource BtnAccent}" Padding="20,7" FontSize="12.5" FontWeight="SemiBold" Margin="10,0,0,0" Click="Apply_Click" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- =====================================================================
+         Cyberpunk Palette (Neon HUD - Stitch Designed)
+         ===================================================================== -->
+    <SolidColorBrush x:Key="Bg" Color="#0A0A12" />
+    <SolidColorBrush x:Key="Panel" Color="#12121F" />
+    <SolidColorBrush x:Key="PanelAlt" Color="#1A1A2E" />
+    <SolidColorBrush x:Key="Line" Color="#36365D" />
+    <SolidColorBrush x:Key="Text" Color="#F0F8FF" />
+    <SolidColorBrush x:Key="TextDim" Color="#8B9BB4" />
+    <SolidColorBrush x:Key="TextFaint" Color="#4D516D" />
+    <SolidColorBrush x:Key="Accent" Color="#00F0FF" />
+    <SolidColorBrush x:Key="AccentSoft" Color="#2000F0FF" />
+    <SolidColorBrush x:Key="Down" Color="#00FF9D" />
+    <SolidColorBrush x:Key="Up" Color="#00F0FF" />
+    <SolidColorBrush x:Key="Warn" Color="#FFE600" />
+    <SolidColorBrush x:Key="Bad" Color="#FF007F" />
+
+    <SolidColorBrush x:Key="HoverBg" Color="#25253D" />
+    <SolidColorBrush x:Key="SelectionBg" Color="#1F2A42" />
+    <SolidColorBrush x:Key="SelectionBorder" Color="#00F0FF" />
+    <SolidColorBrush x:Key="TitleBarBg" Color="#0A0A12" />
+    <SolidColorBrush x:Key="TitleBarBtnHover" Color="#25253D" />
+    <SolidColorBrush x:Key="DataGridRowAlt" Color="#0E0E18" />
+    <SolidColorBrush x:Key="HeaderBg" Color="#151528" />
+    <SolidColorBrush x:Key="HeaderBorder" Color="#36365D" />
+    <SolidColorBrush x:Key="TabActiveBg" Color="#00F0FF" />
+    <SolidColorBrush x:Key="TabActiveFg" Color="#0A0A12" />
+    <SolidColorBrush x:Key="ChipCheckedBg" Color="#00F0FF" />
+    <SolidColorBrush x:Key="ChipCheckedFg" Color="#0A0A12" />
+</ResourceDictionary>

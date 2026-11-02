@@ -1,0 +1,840 @@
+{
+  "TimestampUtc": "2026-11-02T05:38:58.4805889Z",
+  "TotalTests": 83,
+  "Passed": 83,
+  "Failed": 0,
+  "DurationMs": 2982,
+  "Success": true,
+  "Results": [
+    {
+      "SuiteName": "BandwidthLimiterTests",
+      "TestName": "ProcessRow_LimitProperties_FormatCorrectly",
+      "Tier": 1,
+      "Description": "Verifies ProcessRow LimitKbps and DownloadLimitKbps properties and formatted text",
+      "Passed": true,
+      "DurationMs": 3,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "BandwidthLimiterTests",
+      "TestName": "TokenBucket_Algorithm_ThrottlesTrafficAndReplenishes",
+      "Tier": 1,
+      "Description": "Verifies TokenBucket rate limiter enforces rate cap and allows linear token replenish",
+      "Passed": true,
+      "DurationMs": 132,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "BandwidthLimiterTests",
+      "TestName": "WinDivertShaper_LimitConfiguration_UpdatesCorrectly",
+      "Tier": 1,
+      "Description": "Verifies WinDivertShaper SetDownloadLimit and ClearDownloadLimit state transitions",
+      "Passed": true,
+      "DurationMs": 27,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ConnectionBlockingTests",
+      "TestName": "BlockerState_Labels_MatchSpecification",
+      "Tier": 1,
+      "Description": "Verifies BlockerState Label formatting",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ConnectionBlockingTests",
+      "TestName": "BlockerState_Next_CyclesThroughStates",
+      "Tier": 1,
+      "Description": "Verifies BlockerState cycle: NotSet -\u003E Deny -\u003E Allow -\u003E Ask -\u003E NotSet",
+      "Passed": true,
+      "DurationMs": 1,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ConnectionBlockingTests",
+      "TestName": "FirewallRule_Defaults_AreValid",
+      "Tier": 1,
+      "Description": "Verifies FirewallRule initialization, default properties and 32-char GUID",
+      "Passed": true,
+      "DurationMs": 1,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ConnectionBlockingTests",
+      "TestName": "WfpFirewall_Initialization_DoesNotCrash",
+      "Tier": 1,
+      "Description": "Verifies WfpFirewall engine instantiates safely reporting availability",
+      "Passed": true,
+      "DurationMs": 5,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ControlGateTests",
+      "TestName": "ControlGate_NonElevatedUser_CannotMutate_CanMonitor",
+      "Tier": 1,
+      "Description": "Verifies non-elevated user permissions allow monitoring but block mutations with permission message",
+      "Passed": true,
+      "DurationMs": 4,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "DockingHostTests",
+      "TestName": "DetachAndRehost_PaneReturnsToOriginalSlot",
+      "Tier": 1,
+      "Description": "Verifies HostSlot captures parent slot and re-hosts elements cleanly for StackPanel and TabControl (B1)",
+      "Passed": true,
+      "DurationMs": 484,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "DockLayoutTests",
+      "TestName": "DockLayout_PersistAndRestore_RoundTrips",
+      "Tier": 1,
+      "Description": "Verifies dockable tool window layout model persistence, serialization, and round-trip recovery (Item 22.x)",
+      "Passed": true,
+      "DurationMs": 160,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEngineTests",
+      "TestName": "FilterRule_ApplicationPath_MatchesSubstring",
+      "Tier": 1,
+      "Description": "Verifies FilterRule matches application path substring",
+      "Passed": true,
+      "DurationMs": 5,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEngineTests",
+      "TestName": "FilterRule_DomainName_WildcardMatches",
+      "Tier": 1,
+      "Description": "Verifies FilterRule matches domain name with wildcards",
+      "Passed": true,
+      "DurationMs": 18,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEngineTests",
+      "TestName": "FilterRule_IpRange_MatchesPrefix",
+      "Tier": 1,
+      "Description": "Verifies FilterRule matches IP range subnet prefix",
+      "Passed": true,
+      "DurationMs": 3,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEngineTests",
+      "TestName": "FilterRule_PortRange_MatchesPort",
+      "Tier": 1,
+      "Description": "Verifies FilterRule matches remote destination port",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEngineTests",
+      "TestName": "FilterRule_Protocol_MatchesCaseInsensitively",
+      "Tier": 1,
+      "Description": "Verifies FilterRule matches transport protocol case-insensitively",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEngineTests",
+      "TestName": "FilterRule_Tag_MatchesAppTag",
+      "Tier": 1,
+      "Description": "Verifies FilterRule matches application tag",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEngineTests",
+      "TestName": "FilterRule_Zone_MatchesLocalAndInternet",
+      "Tier": 1,
+      "Description": "Verifies FilterRule matches Zone (Local vs Internet)",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "HistoryStatsTests",
+      "TestName": "ProcessWithAndWithoutConnections_RecordsOnce",
+      "Tier": 1,
+      "Description": "Verifies process with connections records via connection path only and process without connections records via compensating path, preventing double-counting (B2)",
+      "Passed": true,
+      "DurationMs": 83,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PersistenceStorageTests",
+      "TestName": "AtomicStorage_Overwrite_CreatesBackupFile",
+      "Tier": 1,
+      "Description": "Verifies AtomicStorage creates .bak file on subsequent overwrites",
+      "Passed": true,
+      "DurationMs": 42,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PersistenceStorageTests",
+      "TestName": "AtomicStorage_SaveAndLoad_RoundTrip",
+      "Tier": 1,
+      "Description": "Verifies AtomicStorage saves and loads data with byte integrity",
+      "Passed": true,
+      "DurationMs": 14,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PersistenceStorageTests",
+      "TestName": "SettingsStore_RoundTrip_PersistsAllEntities",
+      "Tier": 1,
+      "Description": "Verifies SettingsStore round-trip saves and loads AppRule, ScheduleRule, and FilterRule",
+      "Passed": true,
+      "DurationMs": 199,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PhaseFinalTests",
+      "TestName": "DeadCodeSweep_ZeroOrphanClickHandlers",
+      "Tier": 1,
+      "Description": "Verifies zero orphan Click event handlers across all *.xaml.cs files in the project (Batch B4)",
+      "Passed": true,
+      "DurationMs": 76,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PhaseFinalTests",
+      "TestName": "FeatureLedger_Audit_ZeroBeyondEofCitationsAndExactArithmetic",
+      "Tier": 1,
+      "Description": "Audits FEATURE_LEDGER.md verifying 0 beyond-EOF citations, legitimate row statuses, and 311 arithmetic (Batch B3)",
+      "Passed": true,
+      "DurationMs": 317,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PhaseFinalTests",
+      "TestName": "PacketHolding_AskAction_EnqueuesAndReleasesHeldPackets",
+      "Tier": 1,
+      "Description": "Verifies true kernel/WinDivert packet holding and release on Ask blocker action (Items 3.02, 3.03, 3.04)",
+      "Passed": true,
+      "DurationMs": 5,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PhaseFinalTests",
+      "TestName": "SettingsStore_NetLimiterCompatibilityDirectory_LoadsAndMirrors",
+      "Tier": 1,
+      "Description": "Verifies NetLimiter compatibility directory loading and atomic persistence (Item 26.04)",
+      "Passed": true,
+      "DurationMs": 19,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PhaseFinalTests",
+      "TestName": "SqliteHistoryStore_BatchedWrites_PersistAllRecords",
+      "Tier": 1,
+      "Description": "Verifies asynchronous concurrent batched writes offload UI thread and persist all records upon FlushSync (Batch B2)",
+      "Passed": true,
+      "DurationMs": 48,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PhaseFinalTests",
+      "TestName": "SqliteHistoryStore_RoundTripAndAggregation_WorksCorrectly",
+      "Tier": 1,
+      "Description": "Verifies SQLite3 persistent long-term traffic statistics database storage and query (Item 13.01)",
+      "Passed": true,
+      "DurationMs": 21,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PhaseFinalTests",
+      "TestName": "ValveIpc_ClientServerNamedPipe_ExchangesCommands",
+      "Tier": 1,
+      "Description": "Verifies local Named Pipe Client-Service IPC command exchange (Items 1.14, 28.01, 28.02)",
+      "Passed": true,
+      "DurationMs": 117,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PhaseFinalTests",
+      "TestName": "WindowsAclManager_RoleAndAccountEvaluation_EnforcesMonitorControlAdmin",
+      "Tier": 1,
+      "Description": "Verifies Windows user accounts/groups ACL permissions for Monitor, Control, and Remote Connect (Items 16.01-16.03)",
+      "Passed": true,
+      "DurationMs": 5,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PriorityQueueTests",
+      "TestName": "FilterRule_PriorityAssignment_RetainsValue",
+      "Tier": 1,
+      "Description": "Verifies FilterRule supports Priority configuration",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PriorityQueueTests",
+      "TestName": "ProcessRow_PriorityText_MapsCorrectly",
+      "Tier": 1,
+      "Description": "Verifies ProcessRow priority property and PriorityText formatting",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "PriorityQueueTests",
+      "TestName": "TrafficPriority_EnumValues_ContainExpectedLevels",
+      "Tier": 1,
+      "Description": "Verifies TrafficPriority enum values and mappings",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "QuotaAndScheduleTests",
+      "TestName": "Policy_EffectiveLimit_SelectsActiveCap",
+      "Tier": 1,
+      "Description": "Verifies Policy.EffectiveLimit chooses tightest active schedule cap",
+      "Passed": true,
+      "DurationMs": 1,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "QuotaAndScheduleTests",
+      "TestName": "Policy_IsActive_EvaluatesScheduleWindow",
+      "Tier": 1,
+      "Description": "Verifies Policy.IsActive correctly evaluates time window on active days",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "QuotaAndScheduleTests",
+      "TestName": "Policy_Quota_DetectsThresholdAndFraction",
+      "Tier": 1,
+      "Description": "Verifies Policy.QuotaExceeded and QuotaFraction calculations",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TrafficRateCalculationTests",
+      "TestName": "ConnReading_Properties_MatchInput",
+      "Tier": 1,
+      "Description": "Verifies ConnReading record instantiates with accurate values",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TrafficRateCalculationTests",
+      "TestName": "Fmt_Bytes_ScalesCumulativeVolumes",
+      "Tier": 1,
+      "Description": "Verifies cumulative byte volume formatting across B, KB, MB, GB, TB",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TrafficRateCalculationTests",
+      "TestName": "Fmt_Rate_BitMode_ScalesCorrectly",
+      "Tier": 1,
+      "Description": "Verifies bit/s rate scaling when Fmt.UseBits is enabled",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TrafficRateCalculationTests",
+      "TestName": "Fmt_Rate_ByteMode_ScalesCorrectly",
+      "Tier": 1,
+      "Description": "Verifies byte/s rate scaling across B/s, KB/s, MB/s, and GB/s",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TrafficRateCalculationTests",
+      "TestName": "ProcessRow_RateAndTotals_CalculatesAndUpdates",
+      "Tier": 1,
+      "Description": "Verifies ProcessRow updates throughput, formats totals, and resets correctly",
+      "Passed": true,
+      "DurationMs": 1,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TrafficRateCalculationTests",
+      "TestName": "RatePipeline_ZeroProcessRate_DoesNotZeroConnectionRates",
+      "Tier": 1,
+      "Description": "Verifies connection rates are NOT zeroed out when process engine rate is 0",
+      "Passed": true,
+      "DurationMs": 3,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TrafficRateCalculationTests",
+      "TestName": "WinDivertShaper_NormalPriority_ZeroLatencyDelay",
+      "Tier": 1,
+      "Description": "Verifies Normal and Critical priorities have zero pacing delay overhead",
+      "Passed": true,
+      "DurationMs": 1,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ValveIpcTests",
+      "TestName": "ValveIpc_SetAppLimit_JsonPayload_ParsesPathNames",
+      "Tier": 1,
+      "Description": "Verifies SET_APP_LIMIT accepts JSON payloads and correctly parses Windows paths with colons (B3)",
+      "Passed": true,
+      "DurationMs": 148,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ValveIpcTests",
+      "TestName": "ValveIpc_SyncRules_AppliesAppLimitsAndBlockerState",
+      "Tier": 1,
+      "Description": "Verifies SYNC_RULES applies per-app limits, priorities, and blocker state (B3)",
+      "Passed": true,
+      "DurationMs": 186,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEdgeCasesTests",
+      "TestName": "FilterRule_DomainWildcard_EdgeVariations",
+      "Tier": 2,
+      "Description": "Verifies DomainName matching with wildcard variations",
+      "Passed": true,
+      "DurationMs": 3,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEdgeCasesTests",
+      "TestName": "FilterRule_EmptyAndNullInputs_ReturnsFalseSafely",
+      "Tier": 2,
+      "Description": "Verifies FilterRule handles empty and null inputs safely without throwing",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterRuleEdgeCasesTests",
+      "TestName": "FilterRule_InvalidPortStrings_ReturnsFalse",
+      "Tier": 2,
+      "Description": "Verifies PortRange matching returns false for non-numeric port strings",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "MonitoringAdversarialStressTests",
+      "TestName": "DnsResolver_AdversarialInputs_HandledSafelyAndFiltered",
+      "Tier": 2,
+      "Description": "Stress-tests DnsResolver with invalid IPs, loopback, private IPs, and malformed strings",
+      "Passed": true,
+      "DurationMs": 2,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "MonitoringAdversarialStressTests",
+      "TestName": "DnsResolver_RapidConcurrentRequests_ThreadSafeAndLeakFree",
+      "Tier": 2,
+      "Description": "Stress-tests DnsResolver under high-concurrency rapid enqueue and lookup bursts",
+      "Passed": true,
+      "DurationMs": 10,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "MonitoringAdversarialStressTests",
+      "TestName": "ProcessRow_GraphHistory_CapsAt180Samples_AndFormatsExtremeRates",
+      "Tier": 2,
+      "Description": "Stress-tests ProcessRow graph history capacity (180 samples) and Fmt rate scaling",
+      "Passed": true,
+      "DurationMs": 1,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "MonitoringAdversarialStressTests",
+      "TestName": "ServiceResolver_EdgeAndNonExistentPids_SafeAndCached",
+      "Tier": 2,
+      "Description": "Stress-tests ServiceResolver with negative PIDs, PID 0, PID 4, and non-existent PIDs",
+      "Passed": true,
+      "DurationMs": 9,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "MonitoringAdversarialStressTests",
+      "TestName": "ServiceResolver_RapidConcurrentCalls_ThreadSafe",
+      "Tier": 2,
+      "Description": "Stress-tests ServiceResolver with rapid concurrent queries across multiple threads",
+      "Passed": true,
+      "DurationMs": 3,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "MonitoringAdversarialStressTests",
+      "TestName": "TrafficGraph_ExtremeBandwidthRates_ClampedAndVectorRendered",
+      "Tier": 2,
+      "Description": "Stress-tests TrafficGraph under extreme 10 Gbps bandwidth rates and zero rates on STA thread",
+      "Passed": true,
+      "DurationMs": 3,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "MonitoringAdversarialStressTests",
+      "TestName": "TrafficGraph_SampleHistory_BoundaryVariations_Safe",
+      "Tier": 2,
+      "Description": "Stress-tests TrafficGraph sample edge cases: empty list, single sample, and massive history",
+      "Passed": true,
+      "DurationMs": 5,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "QuotaBoundaryTests",
+      "TestName": "Quota_ExactByteEquality_TriggersExceeded",
+      "Tier": 2,
+      "Description": "Verifies QuotaExceeded triggers at exact byte equality (usedIn \u002B usedOut == QuotaBytes)",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "QuotaBoundaryTests",
+      "TestName": "Quota_FractionClamping_BoundsCorrectly",
+      "Tier": 2,
+      "Description": "Verifies QuotaFraction is strictly clamped to [0.0, 1.0]",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "QuotaBoundaryTests",
+      "TestName": "Quota_LargeByteCounters_64BitScale_NoOverflow",
+      "Tier": 2,
+      "Description": "Verifies Quota arithmetic operates safely on 64-bit Terabyte scales without overflow",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "QuotaBoundaryTests",
+      "TestName": "Quota_ZeroQuota_NeverExceeded",
+      "Tier": 2,
+      "Description": "Verifies rule with QuotaBytes = 0 is treated as unlimited",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ScheduleMidnightBoundaryTests",
+      "TestName": "Schedule_CrossingMidnight_ActiveAfterMidnight",
+      "Tier": 2,
+      "Description": "Verifies schedule crossing midnight (22:00 to 02:00) is active after midnight",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ScheduleMidnightBoundaryTests",
+      "TestName": "Schedule_CrossingMidnight_ActiveBeforeMidnight",
+      "Tier": 2,
+      "Description": "Verifies schedule crossing midnight (22:00 to 02:00) is active before midnight",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ScheduleMidnightBoundaryTests",
+      "TestName": "Schedule_CrossingMidnight_InactiveAtNoon",
+      "Tier": 2,
+      "Description": "Verifies schedule crossing midnight is inactive outside the window during daytime",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ScheduleMidnightBoundaryTests",
+      "TestName": "Schedule_EqualStartAndEnd_ReturnsFalse",
+      "Tier": 2,
+      "Description": "Verifies degenerate schedule with equal StartMinute and EndMinute is never active",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ScheduleMidnightBoundaryTests",
+      "TestName": "Schedule_ExactMinuteBoundaries_StartInclusiveEndExclusive",
+      "Tier": 2,
+      "Description": "Verifies boundary minutes: exact StartMinute is active, exact EndMinute is inactive",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TokenBucketBoundaryTests",
+      "TestName": "TokenBucket_ExtremeThroughput_10Gbps_NoOverflow",
+      "Tier": 2,
+      "Description": "Verifies TokenBucket handles extreme high throughput (10 Gbps) without integer overflow",
+      "Passed": true,
+      "DurationMs": 31,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TokenBucketBoundaryTests",
+      "TestName": "TokenBucket_IdleReplenishment_DoesNotExceedCapacity",
+      "Tier": 2,
+      "Description": "Verifies TokenBucket burst capacity is strictly clamped to 1 second volume",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TokenBucketBoundaryTests",
+      "TestName": "TokenBucket_ZeroOrNegativeRate_EnforcesMinimumFloor",
+      "Tier": 2,
+      "Description": "Verifies TokenBucket enforces minimum safety floor of 1024 B/s",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TornWriteCorruptStorageTests",
+      "TestName": "AtomicStorage_IsValidPayload_RejectsCorruptions",
+      "Tier": 2,
+      "Description": "Verifies AtomicStorage.IsValidPayload rejects null bytes and malformed JSON",
+      "Passed": true,
+      "DurationMs": 1,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TornWriteCorruptStorageTests",
+      "TestName": "AtomicStorage_RepeatedCorruption_SecondCrashRecoversFromBackup",
+      "Tier": 2,
+      "Description": "Verifies repeated crashes after auto-heal still successfully recover from .bak",
+      "Passed": true,
+      "DurationMs": 93,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TornWriteCorruptStorageTests",
+      "TestName": "AtomicStorage_TornWriteNullBytes_AutoHealsFromBackup",
+      "Tier": 2,
+      "Description": "Verifies AtomicStorage automatically heals and recovers from .bak when primary file is null-padded",
+      "Passed": true,
+      "DurationMs": 24,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TornWriteCorruptStorageTests",
+      "TestName": "AtomicStorage_TruncatedJsonWithoutClosingBrace_AutoHealsFromBackup",
+      "Tier": 2,
+      "Description": "Verifies AtomicStorage detects truncated JSON lacking closing brace and auto-heals from .bak",
+      "Passed": true,
+      "DurationMs": 20,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "TornWriteCorruptStorageTests",
+      "TestName": "AtomicStorage_ZeroByteFile_AutoHealsFromBackup",
+      "Tier": 2,
+      "Description": "Verifies AtomicStorage heals from .bak when primary file is 0-byte truncated",
+      "Passed": true,
+      "DurationMs": 20,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterAndBlockerInteractions",
+      "TestName": "BlockerState_ProcessRowIntegration_TogglesState",
+      "Tier": 3,
+      "Description": "Verifies BlockerState interactive cycle integrates with ProcessRow block status",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "FilterAndBlockerInteractions",
+      "TestName": "FilterRule_WithBlockFlag_DeterminesFlowBlockAction",
+      "Tier": 3,
+      "Description": "Verifies FilterRule with Blocked=true applies blocking action to matching traffic flows",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "QuotaAndRuleActionInteractions",
+      "TestName": "Quota_Exceeded_TriggersPolicyAction",
+      "Tier": 3,
+      "Description": "Verifies exceeding quota triggers automatic enforcement action (throttling or blocking)",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "RateAndPriorityInteractions",
+      "TestName": "ProcessRow_RateAndPriorityCoexistence_ReflectsInProperties",
+      "Tier": 3,
+      "Description": "Verifies ProcessRow correctly integrates simultaneous bandwidth limits and traffic priority",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "RateAndPriorityInteractions",
+      "TestName": "TreeNode_HierarchicalProjection_ReflectsProcessLimitsAndPriority",
+      "Tier": 3,
+      "Description": "Verifies TreeNode hierarchical projection reflects child process limits and priority correctly",
+      "Passed": true,
+      "DurationMs": 6,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ScheduleAndStaticCapInteractions",
+      "TestName": "EffectiveLimit_MultipleOverlappingSchedules_TighterWins",
+      "Tier": 3,
+      "Description": "Verifies multiple overlapping active schedules select the tightest limit",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ScheduleAndStaticCapInteractions",
+      "TestName": "EffectiveLimit_TightStaticCap_OverridesLooserSchedule",
+      "Tier": 3,
+      "Description": "Verifies tight static cap overrides looser active schedule",
+      "Passed": true,
+      "DurationMs": 0,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ConcurrentTrafficSimulationTests",
+      "TestName": "ConcurrentPortMapping_ReadWriteChurn_ThreadSafe",
+      "Tier": 4,
+      "Description": "Verifies concurrent port-to-PID table queries and churn run safely without locking or deadlocks",
+      "Passed": true,
+      "DurationMs": 208,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "ConcurrentTrafficSimulationTests",
+      "TestName": "ConcurrentTraffic_MultiThreadedPacketBursts_MaintainsZeroDataLoss",
+      "Tier": 4,
+      "Description": "Verifies multi-threaded simulated packet flow updates counters with exact atomic precision",
+      "Passed": true,
+      "DurationMs": 10,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "RapidConfigurationChurnScenario",
+      "TestName": "RapidConfigurationChurn_ConcurrentReadsAndWrites_ZeroCollisions",
+      "Tier": 4,
+      "Description": "Verifies high-frequency rule, schedule, and priority mutations under concurrent flow evaluation",
+      "Passed": true,
+      "DurationMs": 256,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "SuddenPowerFailureRecoveryScenario",
+      "TestName": "SuddenPowerFailure_InterruptedWrite_AutoHealsFromBackup",
+      "Tier": 4,
+      "Description": "Simulates sudden machine power failure during file save and verifies full automatic state recovery from .bak",
+      "Passed": true,
+      "DurationMs": 29,
+      "ErrorMessage": null,
+      "StackTrace": null
+    },
+    {
+      "SuiteName": "SuddenPowerFailureRecoveryScenario",
+      "TestName": "SuddenPowerFailure_RepeatedBlackout_BackupRetainedAndHealed",
+      "Tier": 4,
+      "Description": "Simulates repeated power blackouts across auto-heal cycles and verifies continuous zero-data-loss recovery",
+      "Passed": true,
+      "DurationMs": 65,
+      "ErrorMessage": null,
+      "StackTrace": null
+    }
+  ]
+}

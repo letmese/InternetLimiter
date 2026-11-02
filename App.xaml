@@ -1,0 +1,27 @@
+<Application x:Class="Valve.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:local="clr-namespace:Valve"
+             xmlns:core="clr-namespace:Valve.Core">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Dark.xaml" />
+                <ResourceDictionary Source="Themes/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <local:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis" />
+            <local:IndentToMarginConverter x:Key="IndentMargin" />
+            <local:FractionToWidthConverter x:Key="FractionWidth" />
+            <local:RateIsActiveConverter x:Key="RateIsActive" />
+
+            <ObjectDataProvider x:Key="Priorities" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+                <ObjectDataProvider.MethodParameters>
+                    <x:Type TypeName="core:TrafficPriority" />
+                </ObjectDataProvider.MethodParameters>
+            </ObjectDataProvider>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

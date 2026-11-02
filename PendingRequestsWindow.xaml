@@ -1,0 +1,109 @@
+<Window x:Class="Valve.PendingRequestsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Blocker — Pending Requests" Height="500" Width="440"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource Bg}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Pending blocker requests" Foreground="{StaticResource Text}"
+                   FontSize="16" FontWeight="SemiBold" Margin="4,0,0,12" />
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="RequestsHost">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="4"
+                                Background="{StaticResource Panel}" Margin="0,0,0,12">
+                            <StackPanel>
+                                <!-- Header bar -->
+                                <Border Background="#45822E" Padding="10,6" CornerRadius="3,3,0,0">
+                                    <Grid>
+                                        <TextBlock Text="{Binding HeaderText}" Foreground="White" FontWeight="SemiBold" FontSize="12" />
+                                        <TextBlock Text="{Binding RemoteEndpoint}" Foreground="White" FontWeight="Bold" FontSize="12" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Details -->
+                                <StackPanel Margin="12,10">
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Image Source="{Binding Icon}" Width="20" Height="20" Margin="0,0,8,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding AppName}" Foreground="{StaticResource Text}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Application:" Foreground="{StaticResource TextDim}" FontSize="11" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Path}" Foreground="{StaticResource Text}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                    </Grid>
+
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Process Id:" Foreground="{StaticResource TextDim}" FontSize="11" />
+                                        <TextBlock Grid.Column="1" Text="{Binding PidText}" Foreground="{StaticResource Text}" FontSize="11" />
+                                    </Grid>
+
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Local Address:" Foreground="{StaticResource TextDim}" FontSize="11" />
+                                        <TextBlock Grid.Column="1" Text="{Binding LocalEndpoint}" Foreground="{StaticResource Text}" FontSize="11" />
+                                    </Grid>
+
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Remote Address:" Foreground="{StaticResource TextDim}" FontSize="11" />
+                                        <TextBlock Grid.Column="1" Text="{Binding RemoteEndpoint}" Foreground="{StaticResource Text}" FontSize="11" />
+                                    </Grid>
+
+                                    <!-- Action buttons -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                        <Button Content="Allow" Style="{StaticResource Btn}" Foreground="#35D39A" BorderBrush="#35D39A"
+                                                Padding="14,4" Margin="0,0,8,0" Tag="{Binding}" Click="Allow_Click" />
+                                        <Button Content="Deny" Style="{StaticResource Btn}" Foreground="#E2604F" BorderBrush="#E2604F"
+                                                Padding="14,4" Margin="0,0,12,0" Tag="{Binding}" Click="Deny_Click" />
+                                        <CheckBox x:Name="RememberBox" Content="Remember" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="0,0,8,0" IsChecked="True"
+                                                  ToolTip="Ticks: this decision is stored as a permanent application rule. Unticks: applies to this connection only." />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <Button Content="Allow for a while" Style="{StaticResource Btn}" Foreground="#35D39A" BorderBrush="#35D39A"
+                                                Padding="12,4" Margin="0,0,8,0" Tag="{Binding}" Click="TemporaryAllow_Click" />
+                                        <Button Content="Deny for a while" Style="{StaticResource Btn}" Foreground="#E2604F" BorderBrush="#E2604F"
+                                                Padding="12,4" Margin="0,0,12,0" Tag="{Binding}" Click="TemporaryDeny_Click" />
+                                        <TextBlock Text="reverts after a few minutes" Foreground="{StaticResource TextFaint}" FontSize="10.5" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <TextBlock Grid.Row="2" x:Name="StatusNote" Foreground="{StaticResource TextDim}" FontSize="11.5"
+                   Margin="4,8,0,0" Text="No pending connection requests." />
+    </Grid>
+</Window>

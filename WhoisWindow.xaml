@@ -1,0 +1,95 @@
+<Window x:Class="Valve.WhoisWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Internet Limiter — WHOIS &amp; IP Intelligence" Height="540" Width="620"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
+        Background="{DynamicResource Bg}"
+        Foreground="{DynamicResource Text}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+            <TextBlock Text="WHOIS &amp; IP Intelligence" Foreground="{DynamicResource Text}" FontSize="18" FontWeight="Bold" />
+            <TextBlock Text="Query geographic ownership, network carrier, ASN, and registration details for any remote IP."
+                       Foreground="{DynamicResource TextDim}" FontSize="12" Margin="0,3,0,0" />
+        </StackPanel>
+
+        <!-- Search Bar -->
+        <Border Grid.Row="1" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}"
+                BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,14">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" Content="Lookup WHOIS" Style="{StaticResource BtnAccent}"
+                        Padding="16,6" Margin="8,0,0,0" Click="Lookup_Click" />
+                <TextBox x:Name="TargetBox" Style="{StaticResource InputBox}" Height="30" FontSize="13"
+                         FontFamily="Consolas" VerticalContentAlignment="Center" KeyDown="TargetBox_KeyDown" />
+            </DockPanel>
+        </Border>
+
+        <!-- Results Card -->
+        <Border Grid.Row="2" Background="{DynamicResource PanelAlt}" BorderBrush="{DynamicResource Line}"
+                BorderThickness="1" CornerRadius="6" Padding="16,14">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="ResultPanel">
+                    <TextBlock x:Name="StatusText" Text="Enter an IP address or hostname above and click Lookup."
+                               Foreground="{DynamicResource TextDim}" FontSize="12.5" Margin="0,0,0,10" />
+
+                    <Grid x:Name="DataGridInfo" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="26" />
+                            <RowDefinition Height="26" />
+                            <RowDefinition Height="26" />
+                            <RowDefinition Height="26" />
+                            <RowDefinition Height="26" />
+                            <RowDefinition Height="26" />
+                            <RowDefinition Height="26" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="IP / Query:" Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtIp" FontFamily="Consolas" FontWeight="Bold" Foreground="{DynamicResource Text}" FontSize="12.5" VerticalAlignment="Center" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Organization / ISP:" Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtIsp" Foreground="{DynamicResource Accent}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Autonomous System:" Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtAsn" FontFamily="Consolas" Foreground="{DynamicResource Text}" FontSize="12" VerticalAlignment="Center" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Country &amp; City:" Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtLocation" Foreground="#35D39A" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Coordinates:" Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" x:Name="TxtCoords" FontFamily="Consolas" Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Timezone:" Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" x:Name="TxtTimezone" Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Reverse DNS:" Foreground="{DynamicResource TextDim}" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TxtReverseDns" FontFamily="Consolas" Foreground="{DynamicResource TextFaint}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Actions -->
+        <DockPanel Grid.Row="3" Margin="0,14,0,0" LastChildFill="False">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                <Button x:Name="BtnMap" Content="🗺️ View on Google Maps" Style="{StaticResource Btn}" Padding="12,6" Margin="0,0,8,0" Click="Map_Click" IsEnabled="False" />
+                <Button x:Name="BtnSearch" Content="🔍 Search IP on Web" Style="{StaticResource Btn}" Padding="12,6" Margin="0,0,8,0" Click="WebSearch_Click" IsEnabled="False" />
+                <Button x:Name="BtnCopy" Content="📋 Copy Details" Style="{StaticResource Btn}" Padding="12,6" Click="Copy_Click" IsEnabled="False" />
+            </StackPanel>
+            <Button DockPanel.Dock="Right" Content="Close" Style="{StaticResource Btn}" Padding="18,6" Click="Close_Click" />
+        </DockPanel>
+    </Grid>
+</Window>

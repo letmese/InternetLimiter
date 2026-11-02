@@ -1,0 +1,288 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="bgGlow" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#182332" stop-opacity="0.8"/>
+      <stop offset="45%" stop-color="#0f141d" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#070a0e" stop-opacity="1"/>
+    </radialGradient>
+
+    <!-- Master Icon Squircle Gradient & Lighting -->
+    <linearGradient id="squircleBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e2736"/>
+      <stop offset="50%" stop-color="#121822"/>
+      <stop offset="100%" stop-color="#0a0e14"/>
+    </linearGradient>
+
+    <linearGradient id="squircleBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
+      <stop offset="35%" stop-color="#35d39a" stop-opacity="0.9"/>
+      <stop offset="70%" stop-color="#8b9dff" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#1e293b" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <linearGradient id="innerPlate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f1621"/>
+      <stop offset="100%" stop-color="#070a0f"/>
+    </linearGradient>
+
+    <!-- Flow Dial Streams -->
+    <linearGradient id="streamEmerald" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#35d39a"/>
+    </linearGradient>
+
+    <linearGradient id="streamCyanIndigo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="60%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b9dff"/>
+    </linearGradient>
+
+    <!-- Brand Text Gradient -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+
+    <!-- Filters & Glows -->
+    <filter id="glowEmerald" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="glowCyan" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="iconShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000000" flood-opacity="0.85"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#35d39a" flood-opacity="0.15"/>
+    </filter>
+
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+
+    <!-- Master Icon Definition -->
+    <g id="masterAppIcon">
+      <!-- Icon Base Plate / Squircle (256x256) -->
+      <rect x="0" y="0" width="256" height="256" rx="58" ry="58" fill="url(#squircleBody)"/>
+      <rect x="0" y="0" width="256" height="256" rx="58" ry="58" fill="none" stroke="url(#squircleBorder)" stroke-width="2.5"/>
+
+      <!-- Inner High-Tech Chamfer Ring -->
+      <rect x="12" y="12" width="232" height="232" rx="48" ry="48" fill="url(#innerPlate)" stroke="#1e293b" stroke-width="1.2" stroke-opacity="0.7"/>
+
+      <!-- Concentric Precision Matrix / Radial Graduations -->
+      <circle cx="128" cy="128" r="92" fill="none" stroke="#1e293b" stroke-width="1" stroke-dasharray="3 4" stroke-opacity="0.6"/>
+      <circle cx="128" cy="128" r="76" fill="none" stroke="#253347" stroke-width="1" stroke-dasharray="2 6" stroke-opacity="0.8"/>
+      <circle cx="128" cy="128" r="42" fill="#090d13" stroke="#1a2332" stroke-width="1.5"/>
+
+      <!-- Peripheral Calibrated Tick Marks -->
+      <g stroke="#334155" stroke-width="1.5" stroke-linecap="round" opacity="0.65">
+        <line x1="128" y1="28" x2="128" y2="34"/>
+        <line x1="128" y1="222" x2="128" y2="228"/>
+        <line x1="28" y1="128" x2="34" y2="128"/>
+        <line x1="222" y1="128" x2="228" y2="128"/>
+        <line x1="57" y1="57" x2="62" y2="62"/>
+        <line x1="199" y1="57" x2="194" y2="62"/>
+        <line x1="57" y1="199" x2="62" y2="194"/>
+        <line x1="199" y1="199" x2="194" y2="194"/>
+      </g>
+
+      <!-- DOWNLOAD STREAM (Emerald Flow: Left / Lower-to-Center Arc) -->
+      <path d="M 64 128 A 64 64 0 0 1 128 64" fill="none" stroke="url(#streamEmerald)" stroke-width="9" stroke-linecap="round" filter="url(#glowEmerald)"/>
+      <path d="M 64 128 A 64 64 0 0 1 128 64" fill="none" stroke="#a7f3d0" stroke-width="2.5" stroke-linecap="round"/>
+
+      <!-- Inbound / Download Vector Nodes -->
+      <circle cx="64" cy="128" r="6" fill="#35d39a" filter="url(#glowEmerald)"/>
+      <circle cx="64" cy="128" r="3" fill="#ffffff"/>
+      <!-- Download Indicator Chevron -->
+      <path d="M 59 123 L 64 128 L 69 123" fill="none" stroke="#042f1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- UPLOAD STREAM (Cyan / Electric Indigo Flow: Right / Upper-to-Center Arc) -->
+      <path d="M 192 128 A 64 64 0 0 1 128 192" fill="none" stroke="url(#streamCyanIndigo)" stroke-width="9" stroke-linecap="round" filter="url(#glowCyan)"/>
+      <path d="M 192 128 A 64 64 0 0 1 128 192" fill="none" stroke="#bae6fd" stroke-width="2.5" stroke-linecap="round"/>
+
+      <!-- Outbound / Upload Vector Nodes -->
+      <circle cx="192" cy="128" r="6" fill="#38bdf8" filter="url(#glowCyan)"/>
+      <circle cx="192" cy="128" r="3" fill="#ffffff"/>
+
+      <!-- Dynamic Intersecting Regulation Rings (The Valve Limiter Core) -->
+      <path d="M 128 64 A 64 64 0 0 1 176 86" fill="none" stroke="#35d39a" stroke-width="4" stroke-dasharray="4 5" stroke-linecap="round" opacity="0.8"/>
+      <path d="M 128 192 A 64 64 0 0 1 80 170" fill="none" stroke="#8b9dff" stroke-width="4" stroke-dasharray="4 5" stroke-linecap="round" opacity="0.8"/>
+
+      <!-- Central Quantum Choke / Aperture Core -->
+      <circle cx="128" cy="128" r="28" fill="#0b1118" stroke="#334155" stroke-width="2"/>
+      
+      <!-- Precision Limiter Aperture Blades -->
+      <path d="M 128 106 L 138 122 L 128 128 Z" fill="#35d39a" opacity="0.9"/>
+      <path d="M 150 128 L 134 138 L 128 128 Z" fill="#38bdf8" opacity="0.9"/>
+      <path d="M 128 150 L 118 134 L 128 128 Z" fill="#8b9dff" opacity="0.9"/>
+      <path d="M 106 128 L 122 118 L 128 128 Z" fill="#10b981" opacity="0.9"/>
+
+      <circle cx="128" cy="128" r="8" fill="#070a0e" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="128" cy="128" r="3" fill="#35d39a"/>
+
+      <!-- Corner Telemetry Micro-Badges -->
+      <text x="24" y="32" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="8" fill="#35d39a" font-weight="bold" letter-spacing="1">RX//LIMIT</text>
+      <text x="180" y="238" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="8" fill="#38bdf8" font-weight="bold" letter-spacing="1">TX//QOS</text>
+
+      <!-- Glass Sheen Glare Reflection -->
+      <path d="M 16 34 C 40 18, 90 14, 160 18 C 100 36, 40 70, 20 130 C 16 85, 14 55, 16 34 Z" fill="#ffffff" opacity="0.04"/>
+    </g>
+  </defs>
+
+  <!-- Background Base Canvas -->
+  <rect width="1200" height="800" fill="url(#bgGlow)"/>
+
+  <!-- Technical Background Grid -->
+  <g opacity="0.08" stroke="#94a3b8" stroke-width="1">
+    <line x1="0" y1="100" x2="1200" y2="100"/>
+    <line x1="0" y1="200" x2="1200" y2="200"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="0" y1="400" x2="1200" y2="400"/>
+    <line x1="0" y1="500" x2="1200" y2="500"/>
+    <line x1="0" y1="600" x2="1200" y2="600"/>
+    <line x1="0" y1="700" x2="1200" y2="700"/>
+    <line x1="200" y1="0" x2="200" y2="800"/>
+    <line x1="400" y1="0" x2="400" y2="800"/>
+    <line x1="600" y1="0" x2="600" y2="800"/>
+    <line x1="800" y1="0" x2="800" y2="800"/>
+    <line x1="1000" y1="0" x2="1000" y2="800"/>
+  </g>
+
+  <!-- TOP BRAND HEADER BANNER -->
+  <g transform="translate(80, 70)">
+    <!-- Brand Badges & Version Tag -->
+    <rect x="0" y="0" width="138" height="24" rx="4" fill="#141c27" stroke="#35d39a" stroke-width="1" stroke-opacity="0.4"/>
+    <circle cx="12" cy="12" r="3.5" fill="#35d39a" filter="url(#glowEmerald)"/>
+    <text x="24" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#35d39a" font-weight="700" letter-spacing="1.5">v5.3 SYSTEM CORE</text>
+
+    <rect x="150" y="0" width="120" height="24" rx="4" fill="#141c27" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.3"/>
+    <text x="162" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#38bdf8" font-weight="600" letter-spacing="1">FORMERLY 'VALVE'</text>
+
+    <!-- Main Title -->
+    <text x="0" y="72" font-family="'Inter', -apple-system, 'SF Pro Display', sans-serif" font-size="44" font-weight="800" fill="url(#textGrad)" letter-spacing="-1.2">
+      INTERNET LIMITER
+    </text>
+
+    <!-- Subtitle / Capability Descriptor -->
+    <text x="2" y="100" font-family="'Inter', sans-serif" font-size="15" font-weight="500" fill="#64748b" letter-spacing="0.2">
+      Professional Bandwidth Controller &amp; Low-Latency Traffic Shaper
+    </text>
+
+    <!-- Live Telemetry Metadata Pill -->
+    <g transform="translate(680, 30)">
+      <rect x="0" y="0" width="360" height="66" rx="8" fill="#0d131c" stroke="#1e293b" stroke-width="1.2"/>
+      <!-- Download Stat -->
+      <circle cx="24" cy="33" r="4" fill="#35d39a"/>
+      <text x="36" y="28" font-family="'JetBrains Mono', monospace" font-size="9" fill="#94a3b8" letter-spacing="0.5">DOWNLINK MAX</text>
+      <text x="36" y="46" font-family="'JetBrains Mono', monospace" font-size="14" fill="#f1f5f9" font-weight="700">10.0 MB/s <tspan fill="#35d39a" font-size="10">SHAPED</tspan></text>
+
+      <line x1="175" y1="14" x2="175" y2="52" stroke="#1e293b" stroke-width="1"/>
+
+      <!-- Upload Stat -->
+      <circle cx="198" cy="33" r="4" fill="#38bdf8"/>
+      <text x="210" y="28" font-family="'JetBrains Mono', monospace" font-size="9" fill="#94a3b8" letter-spacing="0.5">UPLINK QOS</text>
+      <text x="210" y="46" font-family="'JetBrains Mono', monospace" font-size="14" fill="#f1f5f9" font-weight="700">UNLIMITED <tspan fill="#8b9dff" font-size="10">PRIO-1</tspan></text>
+    </g>
+  </g>
+
+  <!-- SECTION 1: MASTER 256x256 APP ICON SHOWCASE (Left Showcase Card) -->
+  <g transform="translate(80, 220)">
+    <!-- Container Card -->
+    <rect x="0" y="0" width="460" height="500" rx="20" fill="#0d131d" stroke="#1e293b" stroke-width="1.5" filter="url(#cardShadow)"/>
+    
+    <!-- Card Header Info -->
+    <text x="32" y="44" font-family="'JetBrains Mono', monospace" font-size="12" fill="#35d39a" font-weight="700" letter-spacing="1">STAGE 01 // PRODUCTION ARTIFACT</text>
+    <text x="32" y="70" font-family="'Inter', sans-serif" font-size="20" font-weight="700" fill="#f8fafc">Master Application Icon</text>
+    <text x="32" y="90" font-family="'Inter', sans-serif" font-size="12" fill="#64748b">256 × 256 px • Retina Ready • macOS / Windows Desktop Target</text>
+
+    <!-- Master Icon Centered Display with Glow Stage -->
+    <g transform="translate(102, 126)" filter="url(#iconShadow)">
+      <use href="#masterAppIcon"/>
+    </g>
+
+    <!-- Vector Flow Spec Callouts under icon -->
+    <g transform="translate(32, 420)">
+      <rect x="0" y="0" width="190" height="54" rx="8" fill="#111926" stroke="#35d39a" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="16" cy="27" r="4" fill="#35d39a"/>
+      <text x="28" y="22" font-family="'JetBrains Mono', monospace" font-size="9" fill="#94a3b8">INGRESS (DL)</text>
+      <text x="28" y="38" font-family="'JetBrains Mono', monospace" font-size="11" fill="#35d39a" font-weight="bold">#35D39A • 520nm Flow</text>
+
+      <rect x="206" y="0" width="190" height="54" rx="8" fill="#111926" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.3"/>
+      <circle cx="222" cy="27" r="4" fill="#38bdf8"/>
+      <text x="234" y="22" font-family="'JetBrains Mono', monospace" font-size="9" fill="#94a3b8">EGRESS (UL)</text>
+      <text x="234" y="38" font-family="'JetBrains Mono', monospace" font-size="11" fill="#38bdf8" font-weight="bold">#38BDF8 / #8B9DFF</text>
+    </g>
+  </g>
+
+  <!-- SECTION 2: MULTI-SCALE ICON MATRIX (Right Side Showcase) -->
+  <g transform="translate(570, 220)">
+    <!-- Matrix Container Card -->
+    <rect x="0" y="0" width="550" height="500" rx="20" fill="#0d131d" stroke="#1e293b" stroke-width="1.5" filter="url(#cardShadow)"/>
+
+    <!-- Header -->
+    <text x="32" y="44" font-family="'JetBrains Mono', monospace" font-size="12" fill="#38bdf8" font-weight="700" letter-spacing="1">STAGE 02 // MULTI-DENSITY HIERARCHY</text>
+    <text x="32" y="70" font-family="'Inter', sans-serif" font-size="20" font-weight="700" fill="#f8fafc">Multi-Scale Deployment Spec</text>
+    <text x="32" y="90" font-family="'Inter', sans-serif" font-size="12" fill="#64748b">Optimized optical balance for desktop launcher, dock, and system status tray</text>
+
+    <!-- TIER A: 64x64 Desktop Shortcut -->
+    <g transform="translate(32, 120)">
+      <rect x="0" y="0" width="486" height="96" rx="12" fill="#111823" stroke="#1e293b" stroke-width="1"/>
+      <!-- Icon Container Box -->
+      <rect x="18" y="16" width="64" height="64" rx="8" fill="#090d13" stroke="#223044" stroke-width="1"/>
+      <g transform="translate(18, 16) scale(0.25)">
+        <use href="#masterAppIcon"/>
+      </g>
+      <!-- Label Details -->
+      <text x="100" y="38" font-family="'Inter', sans-serif" font-size="14" font-weight="700" fill="#f1f5f9">64 × 64 px — Desktop Shortcut &amp; App Switcher</text>
+      <text x="100" y="56" font-family="'JetBrains Mono', monospace" font-size="11" fill="#35d39a">icon_64.ico • Windows App Grid / macOS Launchpad</text>
+      <text x="100" y="72" font-family="'Inter', sans-serif" font-size="11" fill="#64748b">Preserves full dual-stream flow aesthetics with high contrast glyph edges.</text>
+    </g>
+
+    <!-- TIER B: 32x32 Taskbar / Dock Icon -->
+    <g transform="translate(32, 232)">
+      <rect x="0" y="0" width="486" height="96" rx="12" fill="#111823" stroke="#1e293b" stroke-width="1"/>
+      <!-- Icon Container Box -->
+      <rect x="18" y="16" width="64" height="64" rx="8" fill="#090d13" stroke="#223044" stroke-width="1"/>
+      <g transform="translate(34, 32) scale(0.125)">
+        <use href="#masterAppIcon"/>
+      </g>
+      <!-- Label Details -->
+      <text x="100" y="38" font-family="'Inter', sans-serif" font-size="14" font-weight="700" fill="#f1f5f9">32 × 32 px — Windows Taskbar &amp; Titlebar Icon</text>
+      <text x="100" y="56" font-family="'JetBrains Mono', monospace" font-size="11" fill="#38bdf8">icon_32.png • Taskbar active state / Window frame header</text>
+      <text x="100" y="72" font-family="'Inter', sans-serif" font-size="11" fill="#64748b">Retains dynamic center aperture and emerald/indigo balance at standard DPI.</text>
+    </g>
+
+    <!-- TIER C: 16x16 System Tray & Favicon -->
+    <g transform="translate(32, 344)">
+      <rect x="0" y="0" width="486" height="110" rx="12" fill="#111823" stroke="#1e293b" stroke-width="1"/>
+      <!-- Icon Container Box -->
+      <rect x="18" y="23" width="64" height="64" rx="8" fill="#090d13" stroke="#223044" stroke-width="1"/>
+      <g transform="translate(42, 47) scale(0.0625)">
+        <use href="#masterAppIcon"/>
+      </g>
+      <!-- Label Details -->
+      <text x="100" y="42" font-family="'Inter', sans-serif" font-size="14" font-weight="700" fill="#f1f5f9">16 × 16 px — System Tray Daemon &amp; Favicon</text>
+      <text x="100" y="60" font-family="'JetBrains Mono', monospace" font-size="11" fill="#8b9dff">tray_active.ico • Notification Area / Menu Bar Status</text>
+      <text x="100" y="78" font-family="'Inter', sans-serif" font-size="11" fill="#64748b">Pixel-aligned high readability silhouette for quick recognition at glance scale.</text>
+      <!-- Mini Tray Simulated Pill -->
+      <g transform="translate(100, 88)">
+        <rect x="0" y="0" width="118" height="16" rx="4" fill="#0b1118" stroke="#35d39a" stroke-width="0.8"/>
+        <circle cx="8" cy="8" r="2.5" fill="#35d39a"/>
+        <text x="16" y="11" font-family="'JetBrains Mono', monospace" font-size="8" fill="#e2e8f0">STATUS: LIMITING</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Bottom Technical Footer Bar -->
+  <g transform="translate(80, 746)">
+    <text x="0" y="12" font-family="'JetBrains Mono', monospace" font-size="10" fill="#475569">
+      BRAND ID: IL-NET-SPEC-2025 // COMPLIANT WITH VALVE TELEMETRY ENGINE &amp; PROTOCOL SUITE // DESIGN SYSTEM #35D39A • #38BDF8 • #8B9DFF
+    </text>
+  </g>
+</svg>

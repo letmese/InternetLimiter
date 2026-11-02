@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>Valve.E2ETests</AssemblyName>
+    <RootNamespace>Valve.E2ETests</RootNamespace>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <NoWarn>$(NoWarn);WFAC010;CS8618;CS8602;CS8604</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+    <PackageReference Include="WindivertDotnet" Version="1.1.2" />
+  </ItemGroup>
+
+  <!-- Linked core engine source files for opaque-box integration verification -->
+  <ItemGroup>
+    <Compile Include="..\Core\AtomicStorage.cs" Link="Core\AtomicStorage.cs" />
+    <Compile Include="..\Core\BlockerState.cs" Link="Core\BlockerState.cs" />
+    <Compile Include="..\Core\Collector.cs" Link="Core\Collector.cs" />
+    <Compile Include="..\Core\DnsResolver.cs" Link="Core\DnsResolver.cs" />
+    <Compile Include="..\Core\EventLogBridge.cs" Link="Core\EventLogBridge.cs" />
+    <Compile Include="..\Core\ServiceResolver.cs" Link="Core\ServiceResolver.cs" />
+    <Compile Include="..\Core\FilterRule.cs" Link="Core\FilterRule.cs" />
+    <Compile Include="..\Core\Firewall.cs" Link="Core\Firewall.cs" />
+    <Compile Include="..\Core\GeoIp.cs" Link="Core\GeoIp.cs" />
+    <Compile Include="..\Core\History.cs" Link="Core\History.cs" />
+    <Compile Include="..\Core\Icons.cs" Link="Core\Icons.cs" />
+    <Compile Include="..\Core\Models.cs" Link="Core\Models.cs" />
+    <Compile Include="..\Core\NetworkAdapterRow.cs" Link="Core\NetworkAdapterRow.cs" />
+    <Compile Include="..\Core\PermissionEntry.cs" Link="Core\PermissionEntry.cs" />
+    <Compile Include="..\Core\PermissionGuard.cs" Link="Core\PermissionGuard.cs" />
+    <Compile Include="..\Core\Policy.cs" Link="Core\Policy.cs" />
+    <Compile Include="..\Core\Settings.cs" Link="Core\Settings.cs" />
+    <Compile Include="..\Core\Shaper.cs" Link="Core\Shaper.cs" />
+    <Compile Include="..\Core\ThemeManager.cs" Link="Core\ThemeManager.cs" />
+    <Compile Include="..\Core\TreeNode.cs" Link="Core\TreeNode.cs" />
+    <Compile Include="..\Core\UnitConverter.cs" Link="Core\UnitConverter.cs" />
+    <Compile Include="..\Core\WinDivertShaper.cs" Link="Core\WinDivertShaper.cs" />
+    <Compile Include="..\Core\WindowsAclManager.cs" Link="Core\WindowsAclManager.cs" />
+    <Compile Include="..\Core\ControlGate.cs" Link="Core\ControlGate.cs" />
+    <Compile Include="..\Core\DockManager.cs" Link="Core\DockManager.cs" />
+    <Compile Include="..\Core\SqliteHistoryStore.cs" Link="Core\SqliteHistoryStore.cs" />
+    <Compile Include="..\Core\ValveIpcService.cs" Link="Core\ValveIpcService.cs" />
+    <Compile Include="..\Views\TrafficGraph.cs" Link="Views\TrafficGraph.cs" />
+    <Compile Include="..\Interop\Native.cs" Link="Interop\Native.cs" />
+  </ItemGroup>
+
+  <!-- Signed WinDivert native binaries -->
+  <ItemGroup>
+    <None Include="..\lib\WinDivert\*.*" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <Target Name="CheckWinDivertBinaries" BeforeTargets="BeforeBuild">
+    <Error Condition="!Exists('..\lib\WinDivert\WinDivert64.sys')" Text="WinDivert driver files missing in Valve\lib\WinDivert\. Signed binaries required. Download official signed WinDivert from reqrypt.org/windivert.html and place WinDivert.dll and WinDivert64.sys in Valve\lib\WinDivert\." />
+  </Target>
+
+</Project>

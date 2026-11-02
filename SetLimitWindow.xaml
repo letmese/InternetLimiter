@@ -1,0 +1,99 @@
+<Window x:Class="Valve.SetLimitWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Set Network Limit" Height="440" Width="520"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{DynamicResource Bg}"
+        Foreground="{DynamicResource Text}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Process Header -->
+        <Border Grid.Row="0" Background="{DynamicResource PanelAlt}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6" Padding="14,12" Margin="0,0,0,16">
+            <DockPanel LastChildFill="True">
+                <Image Name="AppIconImg" Width="36" Height="36" Margin="0,0,14,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
+                <StackPanel VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Name="AppNameText" Text="Application Name" FontWeight="Bold" FontSize="16" Foreground="{DynamicResource Text}" />
+                        <Border Background="{DynamicResource AccentSoft}" CornerRadius="3" Padding="6,1" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Name="PidText" Text="PID: 0" FontSize="10.5" Foreground="{DynamicResource Accent}" FontWeight="SemiBold" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Name="AppPathText" Text="C:\Program Files\..." FontSize="11" Foreground="{DynamicResource TextDim}" TextTrimming="CharacterEllipsis" Margin="0,3,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Limit Settings -->
+        <Border Grid.Row="1" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6" Padding="16,14">
+            <StackPanel>
+                <!-- Direction Selection -->
+                <TextBlock Text="LIMIT DIRECTION" Style="{StaticResource LabelText}" Margin="0,0,0,8" Opacity="0.8" />
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <RadioButton Name="RadioDownload" Content="Download (Inbound)" GroupName="Direction" IsChecked="True" Foreground="{DynamicResource Text}" FontSize="12.5" Margin="0,0,18,0" Checked="Direction_Changed" />
+                    <RadioButton Name="RadioUpload" Content="Upload (Outbound)" GroupName="Direction" Foreground="{DynamicResource Text}" FontSize="12.5" Margin="0,0,18,0" Checked="Direction_Changed" />
+                    <RadioButton Name="RadioBoth" Content="Both (Coupled)" GroupName="Direction" Foreground="{DynamicResource Text}" FontSize="12.5" Checked="Direction_Changed" />
+                </StackPanel>
+
+                <!-- Value and Unit Input -->
+                <TextBlock Text="LIMIT VALUE" Style="{StaticResource LabelText}" Margin="0,0,0,6" Opacity="0.8" />
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="120" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Name="ValueBox" Grid.Column="0" Height="40" FontSize="20" FontWeight="Bold"
+                             Foreground="{DynamicResource Text}" Background="{DynamicResource PanelAlt}"
+                             BorderBrush="{DynamicResource Line}" BorderThickness="1"
+                             Padding="10,4" VerticalContentAlignment="Center" Margin="0,0,10,0"
+                             PreviewKeyDown="ValueBox_PreviewKeyDown" />
+                    <ComboBox Name="UnitBox" Grid.Column="1" Height="40" FontSize="13.5" FontWeight="SemiBold"
+                              Background="{DynamicResource PanelAlt}" Foreground="{DynamicResource Text}"
+                              BorderBrush="{DynamicResource Line}" VerticalContentAlignment="Center"
+                              SelectedIndex="0">
+                        <ComboBoxItem Content="KB/s" Tag="KB/s" />
+                        <ComboBoxItem Content="MB/s" Tag="MB/s" />
+                        <ComboBoxItem Content="B/s" Tag="B/s" />
+                        <ComboBoxItem Content="Mbps" Tag="Mbps" />
+                        <ComboBoxItem Content="Kbps" Tag="Kbps" />
+                    </ComboBox>
+                </Grid>
+
+                <!-- Preset Quick Buttons -->
+                <TextBlock Text="QUICK PRESETS" Style="{StaticResource LabelText}" Margin="0,0,0,6" Opacity="0.7" />
+                <WrapPanel Margin="0,0,0,14">
+                    <Button Content="256 KB/s" Style="{StaticResource Btn}" Padding="8,4" Margin="0,0,6,6" Click="Preset_Click" Tag="256|KB/s" />
+                    <Button Content="512 KB/s" Style="{StaticResource Btn}" Padding="8,4" Margin="0,0,6,6" Click="Preset_Click" Tag="512|KB/s" />
+                    <Button Content="1 MB/s" Style="{StaticResource Btn}" Padding="8,4" Margin="0,0,6,6" Click="Preset_Click" Tag="1|MB/s" />
+                    <Button Content="2 MB/s" Style="{StaticResource Btn}" Padding="8,4" Margin="0,0,6,6" Click="Preset_Click" Tag="2|MB/s" />
+                    <Button Content="5 MB/s" Style="{StaticResource Btn}" Padding="8,4" Margin="0,0,6,6" Click="Preset_Click" Tag="5|MB/s" />
+                    <Button Content="10 MB/s" Style="{StaticResource Btn}" Padding="8,4" Margin="0,0,6,6" Click="Preset_Click" Tag="10|MB/s" />
+                    <Button Content="50 MB/s" Style="{StaticResource Btn}" Padding="8,4" Margin="0,0,6,6" Click="Preset_Click" Tag="50|MB/s" />
+                </WrapPanel>
+
+                <!-- Enabled Checkbox -->
+                <CheckBox Name="EnabledCheck" Content="Enable limit immediately" IsChecked="True"
+                          Foreground="{DynamicResource Text}" FontSize="12" Margin="0,2,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Footer Actions -->
+        <DockPanel Grid.Row="2" Margin="0,16,0,0">
+            <Button Name="RemoveBtn" DockPanel.Dock="Left" Content="Remove Limit" Style="{StaticResource Btn}"
+                    Foreground="{DynamicResource Bad}" Padding="12,6" Height="34" Click="Remove_Click" ToolTip="Clear limit on this process" />
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Style="{StaticResource Btn}" Padding="16,6" Height="34" Margin="0,0,10,0" IsCancel="True" Click="Cancel_Click" />
+                <Button Content="Save Limit" Style="{StaticResource Btn}" Background="{DynamicResource Down}" Foreground="#0B0D11"
+                        FontWeight="Bold" Padding="20,6" Height="34" IsDefault="True" Click="Apply_Click" />
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>

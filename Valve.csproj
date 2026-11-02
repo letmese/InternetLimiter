@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>InternetLimiter</AssemblyName>
+    <RootNamespace>Valve</RootNamespace>
+    <Version>1.0.0</Version>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <AssemblyTitle>Internet Limiter</AssemblyTitle>
+    <Product>Internet Limiter</Product>
+    <Description>Internet Limiter - High-Performance Real-Time Network Traffic Control System</Description>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <!-- WFAC010 is a WinForms analyzer telling us to move DPI settings out of the
+         manifest. WPF is the UI framework here; the manifest is the correct place
+         for per-monitor DPI awareness, and WinForms is only used for the tray icon. -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWindowsForms injects these as global usings, which collide with WPF's
+         Brush/Pen/Color/Timer/Application. We only need one type from WinForms,
+         so reference it fully qualified instead. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="e2e_tests\**" />
+    <None Remove="e2e_tests\**" />
+    <Compile Remove="installer\**" />
+    <None Remove="installer\**" />
+    <Page Remove="installer\**" />
+    <ApplicationDefinition Remove="installer\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+    <PackageReference Include="WindivertDotnet" Version="1.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="lib\WinDivert\*.*" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+    <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\app_icon_256.png" />
+    <Content Include="Assets\app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\app_icon_256.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="CheckWinDivertBinaries" BeforeTargets="BeforeBuild">
+    <Error Condition="!Exists('lib\WinDivert\WinDivert64.sys')" Text="WinDivert driver files missing in Valve\lib\WinDivert\. Signed binaries required. Download official signed WinDivert from reqrypt.org/windivert.html and place WinDivert.dll and WinDivert64.sys in Valve\lib\WinDivert\." />
+  </Target>
+
+</Project>

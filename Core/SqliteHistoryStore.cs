@@ -17,6 +17,27 @@ public sealed class HistoryRecordEntry
     public DateTime Timestamp { get; set; }
 }
 
+public sealed class HourlyBucket
+{
+    public long Epoch { get; set; }
+    public DateTime LabelTime { get; set; }
+    public long BytesIn { get; set; }
+    public long BytesOut { get; set; }
+    public string TopApp { get; set; } = string.Empty;
+}
+
+public sealed class AppRankingSummary
+{
+    public string App { get; set; } = string.Empty;
+    public long BytesIn { get; set; }
+    public long BytesOut { get; set; }
+    public double InPercentage { get; set; }
+    public double OutPercentage { get; set; }
+    public string DownloadText => Fmt.Bytes(BytesIn);
+    public string UploadText => Fmt.Bytes(BytesOut);
+    public string TotalText => Fmt.Bytes(BytesIn + BytesOut);
+}
+
 /// <summary>
 /// Locally stored, persistent SQLite3 traffic statistics database backend (NetLimiter Sec 13, Item 13.01).
 /// Replaces legacy proprietary/JSON formats with a standard, ACID-compliant SQLite database.
@@ -354,6 +375,178 @@ public sealed class SqliteHistoryStore : IDisposable
             catch { }
         }
         return (0, 0);
+    }
+
+    public List<HourlyBucket> QueryHourlySeries(long startEpoch, long endEpoch, string? appFilter = null)
+    {
+        FlushSync(300);
+        var result = new List<HourlyBucket>();
+        lock (_lock)
+        {
+            if (_connection == null || _isDisposed) return result;
+            try
+            {
+                using var cmd = _connection.CreateCommand();
+                if (string.IsNullOrWhiteSpace(appFilter))
+                {
+                    cmd.CommandText = @"
+                        SELECT hour_epoch, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                        FROM hourly_app_traffic
+                        WHERE hour_epoch >= @start AND hour_epoch <= @end
+                        GROUP BY hour_epoch
+                        ORDER BY hour_epoch ASC;
+                    ";
+                }
+                else
+                {
+                    cmd.CommandText = @"
+                        SELECT hour_epoch, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                        FROM hourly_app_traffic
+                        WHERE hour_epoch >= @start AND hour_epoch <= @end AND app = @app
+                        GROUP BY hour_epoch
+                        ORDER BY hour_epoch ASC;
+                    ";
+                    cmd.Parameters.AddWithValue("@app", appFilter.Trim().ToLowerInvariant());
+                }
+                cmd.Parameters.AddWithValue("@start", startEpoch);
+                cmd.Parameters.AddWithValue("@end", endEpoch);
+
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    long ep = reader.GetInt64(0);
+                    long bin = reader.GetInt64(1);
+                    long bout = reader.GetInt64(2);
+                    result.Add(new HourlyBucket
+                    {
+                        Epoch = ep,
+                        LabelTime = DateTimeOffset.FromUnixTimeSeconds(ep).LocalDateTime,
+                        BytesIn = bin,
+                        BytesOut = bout
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERROR] QueryHourlySeries: {ex.Message}");
+            }
+        }
+        return result;
+    }
+
+    public List<HourlyBucket> QueryDailySeries(DateOnly from, DateOnly to, string? appFilter = null)
+    {
+        FlushSync(300);
+        var result = new List<HourlyBucket>();
+        lock (_lock)
+        {
+            if (_connection == null || _isDisposed) return result;
+            try
+            {
+                using var cmd = _connection.CreateCommand();
+                if (string.IsNullOrWhiteSpace(appFilter))
+                {
+                    cmd.CommandText = @"
+                        SELECT date_str, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                        FROM daily_app_traffic
+                        WHERE date_str >= @from AND date_str <= @to
+                        GROUP BY date_str
+                        ORDER BY date_str ASC;
+                    ";
+                }
+                else
+                {
+                    cmd.CommandText = @"
+                        SELECT date_str, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                        FROM daily_app_traffic
+                        WHERE date_str >= @from AND date_str <= @to AND app = @app
+                        GROUP BY date_str
+                        ORDER BY date_str ASC;
+                    ";
+                    cmd.Parameters.AddWithValue("@app", appFilter.Trim().ToLowerInvariant());
+                }
+                cmd.Parameters.AddWithValue("@from", from.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@to", to.ToString("yyyy-MM-dd"));
+
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    string ds = reader.GetString(0);
+                    long bin = reader.GetInt64(1);
+                    long bout = reader.GetInt64(2);
+                    if (DateTime.TryParse(ds, out var dt))
+                    {
+                        long ep = new DateTimeOffset(dt, TimeSpan.Zero).ToUnixTimeSeconds();
+                        result.Add(new HourlyBucket
+                        {
+                            Epoch = ep,
+                            LabelTime = dt,
+                            BytesIn = bin,
+                            BytesOut = bout
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERROR] QueryDailySeries: {ex.Message}");
+            }
+        }
+        return result;
+    }
+
+    public List<AppRankingSummary> QueryAppRankings(long? startEpoch = null, long? endEpoch = null, DateOnly? from = null, DateOnly? to = null)
+    {
+        FlushSync(300);
+        var list = new List<AppRankingSummary>();
+        lock (_lock)
+        {
+            if (_connection == null || _isDisposed) return list;
+            try
+            {
+                using var cmd = _connection.CreateCommand();
+                if (startEpoch.HasValue && endEpoch.HasValue)
+                {
+                    cmd.CommandText = @"
+                        SELECT app, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                        FROM hourly_app_traffic
+                        WHERE hour_epoch >= @start AND hour_epoch <= @end
+                        GROUP BY app;
+                    ";
+                    cmd.Parameters.AddWithValue("@start", startEpoch.Value);
+                    cmd.Parameters.AddWithValue("@end", endEpoch.Value);
+                }
+                else
+                {
+                    string fStr = (from ?? DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-365))).ToString("yyyy-MM-dd");
+                    string tStr = (to ?? DateOnly.FromDateTime(DateTime.UtcNow)).ToString("yyyy-MM-dd");
+                    cmd.CommandText = @"
+                        SELECT app, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                        FROM daily_app_traffic
+                        WHERE date_str >= @from AND date_str <= @to
+                        GROUP BY app;
+                    ";
+                    cmd.Parameters.AddWithValue("@from", fStr);
+                    cmd.Parameters.AddWithValue("@to", tStr);
+                }
+
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    list.Add(new AppRankingSummary
+                    {
+                        App = reader.GetString(0),
+                        BytesIn = reader.GetInt64(1),
+                        BytesOut = reader.GetInt64(2)
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERROR] QueryAppRankings: {ex.Message}");
+            }
+        }
+        return list;
     }
 
     public void MigrateFromJson(string jsonDir)

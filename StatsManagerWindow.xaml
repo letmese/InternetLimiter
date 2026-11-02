@@ -1,7 +1,8 @@
 <Window x:Class="Valve.StatsManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Internet Limiter — Stats Manager" Height="760" Width="880" MinHeight="560" MinWidth="680"
+        Title="Internet Limiter — Network Traffic Statistics &amp; Analytics"
+        Height="820" Width="1120" MinHeight="660" MinWidth="880"
         WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
         ShowInTaskbar="False"
         Background="{DynamicResource Bg}"
@@ -9,91 +10,426 @@
         TextOptions.TextFormattingMode="Display"
         UseLayoutRounding="True">
 
-    <Grid Margin="20,18,20,18">
+    <Window.Resources>
+        <!-- Filter Pill Style (Matching NetLimiter's active pill tabs with modern dark styling) -->
+        <Style x:Key="FilterPill" TargetType="RadioButton">
+            <Setter Property="Background" Value="#161B22" />
+            <Setter Property="Foreground" Value="#8B94A5" />
+            <Setter Property="BorderBrush" Value="#2E3748" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Margin" Value="0,0,5,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="14" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#21262D" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#484F58" />
+                                <Setter Property="Foreground" Value="#E6E9EF" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#10B981" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#10B981" />
+                                <Setter Property="Foreground" Value="#0B0D11" />
+                                <Setter Property="FontWeight" Value="Bold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ZonePill" TargetType="RadioButton">
+            <Setter Property="Background" Value="#161B22" />
+            <Setter Property="Foreground" Value="#8B94A5" />
+            <Setter Property="BorderBrush" Value="#2E3748" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="11,5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,5,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#21262D" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#484F58" />
+                                <Setter Property="Foreground" Value="#E6E9EF" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1E293B" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#38BDF8" />
+                                <Setter Property="Foreground" Value="#38BDF8" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18,14,18,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Header: database overview -->
-        <Border Grid.Row="0" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,12">
+        <!-- TOP CONTROLS & FILTER BAR -->
+        <Border Grid.Row="0" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,0,0,10">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="DAY FILES" Style="{StaticResource LabelText}" Opacity="0.7" />
-                    <TextBlock Name="DayCountText" Style="{StaticResource LabelText}" FontSize="20" />
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Row 0: Three-column Header (Zones | Timeframe Pills | Actions) -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Column 0: Zone Selector (Left) -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock Text="ZONE:" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="0,0,6,0" Opacity="0.6" FontWeight="SemiBold" FontSize="11" />
+                        <RadioButton x:Name="ZoneInternet" GroupName="ZoneGroup" Content="🌐 Internet" IsChecked="True" Style="{StaticResource ZonePill}" Click="Filter_Changed" />
+                        <RadioButton x:Name="ZoneLan" GroupName="ZoneGroup" Content="🏠 LAN" Style="{StaticResource ZonePill}" Click="Filter_Changed" />
+                        <RadioButton x:Name="ZoneAll" GroupName="ZoneGroup" Content="⚡ All" Style="{StaticResource ZonePill}" Click="Filter_Changed" />
+                    </StackPanel>
+
+                    <!-- Column 1: Timeframe Pills (Center) -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="6,0">
+                        <RadioButton x:Name="Time24h" GroupName="TimeGroup" Content="Last 24 hours" IsChecked="True" Style="{StaticResource FilterPill}" Click="Filter_Changed" />
+                        <RadioButton x:Name="TimeToday" GroupName="TimeGroup" Content="Today" Style="{StaticResource FilterPill}" Click="Filter_Changed" />
+                        <RadioButton x:Name="Time7d" GroupName="TimeGroup" Content="Last 7 days" Style="{StaticResource FilterPill}" Click="Filter_Changed" />
+                        <RadioButton x:Name="TimeMonth" GroupName="TimeGroup" Content="This month" Style="{StaticResource FilterPill}" Click="Filter_Changed" />
+                        <RadioButton x:Name="TimeYear" GroupName="TimeGroup" Content="This year" Style="{StaticResource FilterPill}" Click="Filter_Changed" />
+                        <RadioButton x:Name="TimeAll" GroupName="TimeGroup" Content="All time" Style="{StaticResource FilterPill}" Click="Filter_Changed" />
+                        <RadioButton x:Name="TimeCustom" GroupName="TimeGroup" Content="Custom range" Style="{StaticResource FilterPill}" Click="Filter_Changed" />
+                    </StackPanel>
+
+                    <!-- Column 2: Right Actions -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <ComboBox x:Name="ScopeCombo" Width="95" Margin="0,0,5,0" SelectionChanged="Filter_Changed">
+                            <ComboBoxItem Content="Apps" IsSelected="True" />
+                            <ComboBoxItem Content="Summary" />
+                        </ComboBox>
+
+                        <ComboBox x:Name="DirectionCombo" Width="105" Margin="0,0,6,0" SelectionChanged="Filter_Changed">
+                            <ComboBoxItem Content="All (In &amp; Out)" IsSelected="True" />
+                            <ComboBoxItem Content="Download only" />
+                            <ComboBoxItem Content="Upload only" />
+                        </ComboBox>
+
+                        <Button x:Name="ViewToggleBtn" Content="📋 Data Grid" Style="{StaticResource Btn}" Padding="8,4" Margin="0,0,5,0" Click="ToggleView_Click" ToolTip="Switch between Visual Analytics Charts and Detailed Grid with DB Maintenance" />
+                        <Button Content="💾 Export" Style="{StaticResource Btn}" Padding="8,4" Margin="0,0,5,0" Click="ExportCsv_Click" ToolTip="Export current statistics to CSV file" />
+                        <Button Content="🔄" Style="{StaticResource Btn}" Padding="8,4" Click="Refresh_Click" ToolTip="Refresh statistics" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Row 1: Custom Date Range Bar (Visible when TimeCustom is checked) -->
+                <StackPanel x:Name="CustomDateRow" Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0" Visibility="Collapsed">
+                    <TextBlock Text="Custom date range:" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="0,0,8,0" Opacity="0.7" />
+                    <TextBox x:Name="CustomStartBox" Style="{StaticResource InputBox}" Width="100" Text="2026-10-27" ToolTip="Start date (yyyy-MM-dd)" />
+                    <TextBlock Text="→" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="8,0" />
+                    <TextBox x:Name="CustomEndBox" Style="{StaticResource InputBox}" Width="100" Text="2026-11-02" ToolTip="End date (yyyy-MM-dd)" />
+                    <Button Content="Apply Range" Style="{StaticResource Btn}" Padding="10,3" Margin="8,0,0,0" Click="ApplyCustomRange_Click" />
                 </StackPanel>
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="ON DISK" Style="{StaticResource LabelText}" Opacity="0.7" />
-                    <TextBlock Name="SizeText" Style="{StaticResource LabelText}" FontSize="20" />
-                </StackPanel>
-                <StackPanel Grid.Column="2">
-                    <TextBlock Text="RECORDED SPAN" Style="{StaticResource LabelText}" Opacity="0.7" />
-                    <TextBlock Name="SpanText" Style="{StaticResource LabelText}" FontSize="20" />
-                </StackPanel>
-                <Button Grid.Column="3" Content="Refresh" Style="{StaticResource Btn}" Padding="10,4" VerticalAlignment="Bottom" Click="Refresh_Click" />
             </Grid>
         </Border>
 
-        <!-- Application list (13.14.j) and Traffic History Chart (13.08) -->
+        <!-- MAIN CONTENT AREA -->
         <Grid Grid.Row="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <DockPanel Grid.Row="0" Margin="0,0,0,8">
-                <TextBlock Text="APPLICATIONS" Style="{StaticResource LabelText}" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <TextBox Name="AppSearch" Style="{StaticResource InputBox}" Width="240" DockPanel.Dock="Right" TextChanged="AppSearch_TextChanged" ToolTip="filter by name" />
-            </DockPanel>
-            <DataGrid Name="StatsGrid" Grid.Row="1" RowHeight="30" GridLinesVisibility="Horizontal"
-                      HorizontalGridLinesBrush="{DynamicResource Line}" AutoGenerateColumns="False"
-                      IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column"
-                      SelectionMode="Extended" Sorting="StatsGrid_Sorting">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="application" Width="2*" ElementStyle="{StaticResource CellText}" Binding="{Binding App}" />
-                    <DataGridTextColumn Header="download" Width="130" ElementStyle="{StaticResource CellText}" Binding="{Binding DownloadText}" />
-                    <DataGridTextColumn Header="upload" Width="130" ElementStyle="{StaticResource CellText}" Binding="{Binding UploadText}" />
-                    <DataGridTextColumn Header="total" Width="130" ElementStyle="{StaticResource CellText}" Binding="{Binding TotalText}" />
-                </DataGrid.Columns>
-            </DataGrid>
+            <!-- 1. VISUAL ANALYTICS VIEW (Primary / Default) -->
+            <Grid x:Name="ChartsView" Visibility="Visible">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1.2*" MinHeight="220" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="1.1*" MinHeight="200" />
+                </Grid.RowDefinitions>
 
-            <!-- Dual-direction history traffic canvas chart (13.08) -->
-            <Border Grid.Row="2" Height="90" Background="{DynamicResource PanelAlt}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0">
-                <Grid>
-                    <Canvas Name="HistoryChartCanvas" ClipToBounds="True" />
-                    <TextBlock Text="Traffic Volume Distribution (In / Out)" Style="{StaticResource LabelText}" Opacity="0.5" Margin="8,4,0,0" VerticalAlignment="Top" />
+                <!-- UPPER: Time-Series Dual Bar Column Chart -->
+                <Border Grid.Row="0" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,6">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Chart Header -->
+                        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,6">
+                            <!-- Left: Date/Time Span & Active Filter -->
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                <TextBlock x:Name="ChartRangeTitle" Text="11/1/2026 12:00 PM - 11/2/2026 12:00 PM" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Text}" VerticalAlignment="Center" />
+                                <Border x:Name="ActiveFilterBadge" Visibility="Collapsed" Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1" CornerRadius="12" Padding="8,2" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="ActiveFilterText" Text="Filtered: chrome.exe" FontSize="11" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                        <Button Content="✕" Style="{StaticResource Btn}" Padding="4,0" FontSize="10" Height="18" VerticalAlignment="Center" Click="ClearAppFilter_Click" ToolTip="Clear filter and show all apps" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Right: Legend Badges -->
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                <Border Background="#132D21" BorderBrush="#10B981" BorderThickness="1" CornerRadius="5" Padding="8,3" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Rectangle Width="10" Height="10" Fill="#10B981" RadiusX="2" RadiusY="2" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                        <TextBlock x:Name="ChartDownloadTotalText" Text="Download (969.91 MB)" FontSize="11" FontWeight="SemiBold" Foreground="#34D399" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#331A1E" BorderBrush="#F43F5E" BorderThickness="1" CornerRadius="5" Padding="8,3" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Rectangle Width="10" Height="10" Fill="#F43F5E" RadiusX="2" RadiusY="2" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                        <TextBlock x:Name="ChartUploadTotalText" Text="Upload (3.29 GB)" FontSize="11" FontWeight="SemiBold" Foreground="#FB7185" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#1F2338" BorderBrush="#6366F1" BorderThickness="1" CornerRadius="5" Padding="8,3">
+                                    <TextBlock x:Name="ChartCombinedTotalText" Text="Total (4.26 GB)" FontSize="11" FontWeight="SemiBold" Foreground="#A5B4FC" />
+                                </Border>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Canvas & Tooltip Container -->
+                        <Grid Grid.Row="1" Margin="0,4,0,0">
+                            <Canvas x:Name="TimeSeriesCanvas" ClipToBounds="True" Background="Transparent" SizeChanged="TimeSeriesCanvas_SizeChanged" MouseMove="TimeSeriesCanvas_MouseMove" MouseLeave="TimeSeriesCanvas_MouseLeave" />
+                            
+                            <!-- Floating Interactive Tooltip -->
+                            <Border x:Name="ChartTooltip" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                    Background="#111827" BorderBrush="#374151" BorderThickness="1" CornerRadius="6"
+                                    Padding="10,8" IsHitTestVisible="False" Opacity="0.95">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="12" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.6" />
+                                </Border.Effect>
+                                <StackPanel>
+                                    <TextBlock x:Name="TooltipTime" Text="2026-11-02 06:00" FontWeight="Bold" FontSize="11" Foreground="#F3F4F6" Margin="0,0,0,4" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,1">
+                                        <TextBlock Text="⬇️ In: " FontSize="11" Foreground="#34D399" />
+                                        <TextBlock x:Name="TooltipIn" Text="284.1 KB" FontSize="11" FontWeight="SemiBold" Foreground="#F3F4F6" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,1">
+                                        <TextBlock Text="⬆️ Out: " FontSize="11" Foreground="#FB7185" />
+                                        <TextBlock x:Name="TooltipOut" Text="17.1 KB" FontSize="11" FontWeight="SemiBold" Foreground="#F3F4F6" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,1">
+                                        <TextBlock Text="🌐 Total: " FontSize="11" Foreground="#9CA3AF" />
+                                        <TextBlock x:Name="TooltipTotal" Text="301.2 KB" FontSize="11" FontWeight="SemiBold" Foreground="#F3F4F6" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- GridSplitter between Upper and Lower Charts -->
+                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="Transparent" Cursor="SizeNS" Margin="0,2" />
+
+                <!-- LOWER: Dual Horizontal Ranking Breakdown Charts (Left: Download, Right: Upload) -->
+                <Grid Grid.Row="2" Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- LEFT: Top Downloaders -->
+                    <Border Grid.Column="0" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,5,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Download Ranking Header -->
+                            <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,8">
+                                <StackPanel DockPanel.Dock="Left">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="⬇️ Download Ranking" FontWeight="Bold" FontSize="13" Foreground="#34D399" />
+                                        <TextBlock x:Name="DlRankingTotalBadge" Text="(969.91 MB)" FontSize="12" Foreground="#8B94A5" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="Click any application to filter the timeline chart" FontSize="10" Foreground="#6E7681" Margin="0,2,0,0" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <!-- Download Ranking Items List -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel x:Name="DlRankingContainer" Margin="0,2,4,0" />
+                            </ScrollViewer>
+
+                            <!-- Bottom Scale for Download -->
+                            <Border Grid.Row="2" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,4,0,0" Margin="0,6,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="0" FontSize="10" Foreground="#6E7681" HorizontalAlignment="Left" />
+                                    <TextBlock Grid.Column="1" x:Name="DlScaleMid" Text="500 MB" FontSize="10" Foreground="#6E7681" HorizontalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" x:Name="DlScaleMax" Text="1000 MB" FontSize="10" Foreground="#6E7681" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- RIGHT: Top Uploaders -->
+                    <Border Grid.Column="1" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="5,0,0,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Upload Ranking Header -->
+                            <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,8">
+                                <StackPanel DockPanel.Dock="Left">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="⬆️ Upload Ranking" FontWeight="Bold" FontSize="13" Foreground="#FB7185" />
+                                        <TextBlock x:Name="UlRankingTotalBadge" Text="(3.29 GB)" FontSize="12" Foreground="#8B94A5" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="Click any application to filter the timeline chart" FontSize="10" Foreground="#6E7681" Margin="0,2,0,0" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <!-- Upload Ranking Items List -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel x:Name="UlRankingContainer" Margin="0,2,4,0" />
+                            </ScrollViewer>
+
+                            <!-- Bottom Scale for Upload -->
+                            <Border Grid.Row="2" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,4,0,0" Margin="0,6,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="0" FontSize="10" Foreground="#6E7681" HorizontalAlignment="Left" />
+                                    <TextBlock Grid.Column="1" x:Name="UlScaleMid" Text="1.6 GB" FontSize="10" Foreground="#6E7681" HorizontalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" x:Name="UlScaleMax" Text="3.3 GB" FontSize="10" Foreground="#6E7681" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
                 </Grid>
-            </Border>
+            </Grid>
+
+            <!-- 2. DETAILED GRID & DATABASE MAINTENANCE VIEW (Toggleable) -->
+            <Grid x:Name="GridView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Header: database overview -->
+                <Border Grid.Row="0" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="DAY FILES" Style="{StaticResource LabelText}" Opacity="0.7" />
+                            <TextBlock Name="DayCountText" Style="{StaticResource LabelText}" FontSize="18" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="ON DISK" Style="{StaticResource LabelText}" Opacity="0.7" />
+                            <TextBlock Name="SizeText" Style="{StaticResource LabelText}" FontSize="18" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="RECORDED SPAN" Style="{StaticResource LabelText}" Opacity="0.7" />
+                            <TextBlock Name="SpanText" Style="{StaticResource LabelText}" FontSize="18" />
+                        </StackPanel>
+                        <Button Grid.Column="3" Content="Refresh" Style="{StaticResource Btn}" Padding="10,4" VerticalAlignment="Bottom" Click="Refresh_Click" />
+                    </Grid>
+                </Border>
+
+                <!-- Application DataGrid -->
+                <Grid Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock Text="APPLICATIONS" Style="{StaticResource LabelText}" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <TextBox Name="AppSearch" Style="{StaticResource InputBox}" Width="260" DockPanel.Dock="Right" TextChanged="AppSearch_TextChanged" ToolTip="Filter by name" />
+                    </DockPanel>
+                    <DataGrid Name="StatsGrid" Grid.Row="1" RowHeight="30" GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="{DynamicResource Line}" AutoGenerateColumns="False"
+                              IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column"
+                              SelectionMode="Extended" Sorting="StatsGrid_Sorting">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="application" Width="2*" ElementStyle="{StaticResource CellText}" Binding="{Binding App}" />
+                            <DataGridTextColumn Header="download" Width="140" ElementStyle="{StaticResource CellText}" Binding="{Binding DownloadText}" />
+                            <DataGridTextColumn Header="upload" Width="140" ElementStyle="{StaticResource CellText}" Binding="{Binding UploadText}" />
+                            <DataGridTextColumn Header="total" Width="140" ElementStyle="{StaticResource CellText}" Binding="{Binding TotalText}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Dual-direction mini history traffic canvas chart -->
+                    <Border Grid.Row="2" Height="70" Background="{DynamicResource PanelAlt}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0">
+                        <Grid>
+                            <Canvas Name="HistoryChartCanvas" ClipToBounds="True" />
+                            <TextBlock Text="Overall Traffic Distribution" Style="{StaticResource LabelText}" Opacity="0.5" Margin="8,4,0,0" VerticalAlignment="Top" />
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Actions: DB Maintenance -->
+                <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="delete days" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox Name="FromBox" Style="{StaticResource InputBox}" Width="92" Text="2026-01-01" ToolTip="start yyyy-MM-dd" />
+                        <TextBlock Text="→" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="6,0" />
+                        <TextBox Name="ToBox" Style="{StaticResource InputBox}" Width="92" Text="2026-01-31" ToolTip="end yyyy-MM-dd" />
+                        <Button Content="Delete range" Style="{StaticResource Btn}" Padding="9,3" Margin="8,0,0,0" Click="DeleteRange_Click" />
+                        <Button Content="Delete selected app" Style="{StaticResource Btn}" Padding="9,3" Margin="8,0,0,0" Click="DeleteApp_Click" />
+                        <Button Content="Check integrity" Style="{StaticResource Btn}" Padding="9,3" Margin="8,0,0,0" Click="Repair_Click" />
+                        <Button Content="Compact DB" Style="{StaticResource Btn}" Padding="9,3" Margin="8,0,0,0" Click="Compact_Click" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBlock Text="merge into" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox Name="MergeTarget" Style="{StaticResource InputBox}" Width="130" ToolTip="target app name" />
+                        <TextBlock Text="selected apps" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="12,0,8,0" />
+                        <Button Content="Merge" Style="{StaticResource Btn}" Padding="9,3" Margin="0,0,0,0" Click="Merge_Click" />
+                        <TextBlock Text="import from" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="16,0,8,0" />
+                        <Button Content="Browse…" Style="{StaticResource Btn}" Padding="9,3" Margin="0,0,0,0" Click="Import_Click" />
+                        <TextBlock Name="StatusText" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="14,0,0,0" Opacity="0.8" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
         </Grid>
 
-        <!-- Actions -->
-        <StackPanel Grid.Row="2" Margin="0,14,0,0">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="delete days" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <TextBox Name="FromBox" Style="{StaticResource InputBox}" Width="92" Text="2026-01-01" ToolTip="start yyyy-MM-dd" />
-                <TextBlock Text="→" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="6,0" />
-                <TextBox Name="ToBox" Style="{StaticResource InputBox}" Width="92" Text="2026-01-31" ToolTip="end yyyy-MM-dd" />
-                <Button Content="Delete range" Style="{StaticResource Btn}" Padding="9,3" Margin="8,0,0,0" Click="DeleteRange_Click" />
-                <Button Content="Delete selected app" Style="{StaticResource Btn}" Padding="9,3" Margin="8,0,0,0" Click="DeleteApp_Click" />
-                <Button Content="Check integrity" Style="{StaticResource Btn}" Padding="9,3" Margin="8,0,0,0" Click="Repair_Click" />
-                <Button Content="Compact DB" Style="{StaticResource Btn}" Padding="9,3" Margin="8,0,0,0" Click="Compact_Click" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                <TextBlock Text="merge into" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <TextBox Name="MergeTarget" Style="{StaticResource InputBox}" Width="130" ToolTip="target app name" />
-                <TextBlock Text="selected apps" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="12,0,8,0" />
-                <Button Content="Merge" Style="{StaticResource Btn}" Padding="9,3" Margin="0,0,0,0" Click="Merge_Click" />
-                <TextBlock Text="import from" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="16,0,8,0" />
-                <Button Content="Browse…" Style="{StaticResource Btn}" Padding="9,3" Margin="0,0,0,0" Click="Import_Click" />
-                <TextBlock Name="StatusText" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="14,0,0,0" Opacity="0.8" />
-            </StackPanel>
-        </StackPanel>
+        <!-- FOOTER TELEMETRY STATUS BAR -->
+        <Border Grid.Row="2" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6" Padding="12,6" Margin="0,10,0,0">
+            <DockPanel LastChildFill="False">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Fill="#10B981" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBlock x:Name="FooterTelemetryMetrics" Text="Status: Ready | Active Apps: 0 | Total Traffic: 0 B | Query Time: 0 ms" FontSize="11" Foreground="{DynamicResource TextDim}" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                    <TextBlock x:Name="FooterDbMetrics" Text="Database: traffic_stats.db" FontSize="11" Foreground="{DynamicResource TextFaint}" VerticalAlignment="Center" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
     </Grid>
 </Window>

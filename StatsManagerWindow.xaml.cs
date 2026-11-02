@@ -189,7 +189,14 @@ public partial class StatsManagerWindow : Window
         _activeStart = start;
         _activeEnd = end;
         _isHourlyMode = isHourly;
-        ChartRangeTitle.Text = rangeTitle;
+
+        // Zone filter determination
+        string zone = "internet";
+        if (ZoneLan?.IsChecked == true) zone = "local";
+        else if (ZoneAll?.IsChecked == true) zone = "all";
+
+        string zonePrefix = zone == "local" ? "🏠 [Local LAN] " : (zone == "all" ? "⚡ [All Traffic] " : "🌐 [Internet] ");
+        ChartRangeTitle.Text = zonePrefix + rangeTitle;
 
         // Active app filter badge
         if (!string.IsNullOrEmpty(_activeAppFilter))
@@ -202,7 +209,11 @@ public partial class StatsManagerWindow : Window
             ActiveFilterBadge.Visibility = Visibility.Collapsed;
         }
 
-        // Query time-series data from SQLite
+        // Direction filter
+        int dirIndex = DirectionCombo?.SelectedIndex ?? 0;
+        // 0 = All (In & Out), 1 = Download only, 2 = Upload only
+
+        // Query time-series data from SQLite with Zone support
         long startEpoch = new DateTimeOffset(start).ToUnixTimeSeconds();
         long endEpoch = new DateTimeOffset(end).ToUnixTimeSeconds();
         var store = _vm.HistorySqliteStore;
@@ -212,8 +223,8 @@ public partial class StatsManagerWindow : Window
 
         if (isHourly)
         {
-            buckets = store.QueryHourlySeries(startEpoch, endEpoch, _activeAppFilter);
-            rankings = store.QueryAppRankings(startEpoch: startEpoch, endEpoch: endEpoch);
+            buckets = store.QueryHourlySeries(startEpoch, endEpoch, _activeAppFilter, zone);
+            rankings = store.QueryAppRankings(startEpoch: startEpoch, endEpoch: endEpoch, zone: zone);
 
             // Synthesize full 24-bucket grid if Last 24 Hours or Today
             buckets = FillHourlyGrid(start, end, buckets);
@@ -222,15 +233,15 @@ public partial class StatsManagerWindow : Window
         {
             var fromDate = DateOnly.FromDateTime(start);
             var toDate = DateOnly.FromDateTime(end);
-            buckets = store.QueryDailySeries(fromDate, toDate, _activeAppFilter);
-            rankings = store.QueryAppRankings(from: fromDate, to: toDate);
+            buckets = store.QueryDailySeries(fromDate, toDate, _activeAppFilter, zone);
+            rankings = store.QueryAppRankings(from: fromDate, to: toDate, zone: zone);
 
             // Fill daily grid
             buckets = FillDailyGrid(fromDate, toDate, buckets);
         }
 
-        // Fallback: If SQLite was empty or freshly opened, populate from HistoryStore totals
-        if (rankings.Count == 0)
+        // Fallback: If SQLite was empty or freshly opened, populate from HistoryStore totals (for Internet zone)
+        if (rankings.Count == 0 && zone != "local")
         {
             var fallback = _vm.GetAllAppTotals();
             rankings = fallback.Select(f => new AppRankingSummary
@@ -244,7 +255,6 @@ public partial class StatsManagerWindow : Window
             {
                 long totalIn = fallback.Sum(f => f.BytesIn);
                 long totalOut = fallback.Sum(f => f.BytesOut);
-                // Distribute a gentle representation across the buckets for visual elegance
                 if (buckets.Count > 0)
                 {
                     buckets[buckets.Count - 1].BytesIn = totalIn;
@@ -262,7 +272,25 @@ public partial class StatsManagerWindow : Window
 
         ChartDownloadTotalText.Text = $"Download ({Fmt.Bytes(sumIn)})";
         ChartUploadTotalText.Text = $"Upload ({Fmt.Bytes(sumOut)})";
-        ChartCombinedTotalText.Text = $"Total: {Fmt.Bytes(sumCombined)}";
+
+        if (dirIndex == 1)
+        {
+            ChartUploadTotalText.Visibility = Visibility.Collapsed;
+            ChartDownloadTotalText.Visibility = Visibility.Visible;
+            ChartCombinedTotalText.Text = $"Download: {Fmt.Bytes(sumIn)}";
+        }
+        else if (dirIndex == 2)
+        {
+            ChartDownloadTotalText.Visibility = Visibility.Collapsed;
+            ChartUploadTotalText.Visibility = Visibility.Visible;
+            ChartCombinedTotalText.Text = $"Upload: {Fmt.Bytes(sumOut)}";
+        }
+        else
+        {
+            ChartDownloadTotalText.Visibility = Visibility.Visible;
+            ChartUploadTotalText.Visibility = Visibility.Visible;
+            ChartCombinedTotalText.Text = $"Total: {Fmt.Bytes(sumCombined)}";
+        }
 
         DlRankingTotalBadge.Text = $"({Fmt.Bytes(sumIn)})";
         UlRankingTotalBadge.Text = $"({Fmt.Bytes(sumOut)})";
@@ -274,7 +302,8 @@ public partial class StatsManagerWindow : Window
         RenderBreakdownRankings(rankings, sumIn, sumOut);
 
         sw.Stop();
-        FooterTelemetryMetrics.Text = $"Status: Active | Active Apps: {rankings.Count} | Total Traffic: {Fmt.Bytes(sumCombined)} | ⬇️ In: {Fmt.Bytes(sumIn)} | ⬆️ Out: {Fmt.Bytes(sumOut)} | Query Time: {sw.ElapsedMilliseconds} ms";
+        string zoneLabel = zone == "local" ? "LAN" : (zone == "all" ? "All" : "Internet");
+        FooterTelemetryMetrics.Text = $"Status: Active | Zone: {zoneLabel} | Active Apps: {rankings.Count} | Total Traffic: {Fmt.Bytes(sumCombined)} | ⬇️ In: {Fmt.Bytes(sumIn)} | ⬆️ Out: {Fmt.Bytes(sumOut)} | Query Time: {sw.ElapsedMilliseconds} ms";
     }
 
     private List<HourlyBucket> FillHourlyGrid(DateTime start, DateTime end, List<HourlyBucket> existing)
@@ -351,12 +380,16 @@ public partial class StatsManagerWindow : Window
         double chartH = canvasH - topMargin - bottomMargin;
         if (chartW <= 10 || chartH <= 10) return;
 
+        int dirIndex = DirectionCombo?.SelectedIndex ?? 0;
+        bool drawIn = dirIndex == 0 || dirIndex == 1;
+        bool drawOut = dirIndex == 0 || dirIndex == 2;
+
         // Find max bytes for Y-axis scale
         long maxBytes = 1024 * 1024; // 1 MB default floor
         foreach (var b in _activeBuckets)
         {
-            if (b.BytesIn > maxBytes) maxBytes = b.BytesIn;
-            if (b.BytesOut > maxBytes) maxBytes = b.BytesOut;
+            if (drawIn && b.BytesIn > maxBytes) maxBytes = b.BytesIn;
+            if (drawOut && b.BytesOut > maxBytes) maxBytes = b.BytesOut;
         }
 
         // Draw horizontal grid lines & Y-axis labels (4 steps: 0, 33%, 66%, 100%)
@@ -422,38 +455,43 @@ public partial class StatsManagerWindow : Window
             double inH = (bucket.BytesIn / (double)maxBytes) * chartH;
             double outH = (bucket.BytesOut / (double)maxBytes) * chartH;
 
+            double inBarW = (drawIn && !drawOut) ? barWidth * 1.5 : barWidth;
+            double outBarW = (!drawIn && drawOut) ? barWidth * 1.5 : barWidth;
+
             // Inbound column
-            if (inH > 0 || bucket.BytesIn > 0)
+            if (drawIn && (inH > 0 || bucket.BytesIn > 0))
             {
                 double drawH = Math.Max(2, inH);
                 var inRect = new Rectangle
                 {
-                    Width = barWidth,
+                    Width = inBarW,
                     Height = drawH,
                     Fill = inBrush,
                     RadiusX = 2,
                     RadiusY = 2,
                     Tag = bucket
                 };
-                Canvas.SetLeft(inRect, slotCenterX - barWidth - 1);
+                double inX = (drawIn && !drawOut) ? (slotCenterX - inBarW / 2) : (slotCenterX - barWidth - 1);
+                Canvas.SetLeft(inRect, inX);
                 Canvas.SetTop(inRect, topMargin + chartH - drawH);
                 TimeSeriesCanvas.Children.Add(inRect);
             }
 
             // Outbound column
-            if (outH > 0 || bucket.BytesOut > 0)
+            if (drawOut && (outH > 0 || bucket.BytesOut > 0))
             {
                 double drawH = Math.Max(2, outH);
                 var outRect = new Rectangle
                 {
-                    Width = barWidth,
+                    Width = outBarW,
                     Height = drawH,
                     Fill = outBrush,
                     RadiusX = 2,
                     RadiusY = 2,
                     Tag = bucket
                 };
-                Canvas.SetLeft(outRect, slotCenterX + 1);
+                double outX = (!drawIn && drawOut) ? (slotCenterX - outBarW / 2) : (slotCenterX + 1);
+                Canvas.SetLeft(outRect, outX);
                 Canvas.SetTop(outRect, topMargin + chartH - drawH);
                 TimeSeriesCanvas.Children.Add(outRect);
             }

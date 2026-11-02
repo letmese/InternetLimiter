@@ -124,7 +124,8 @@
                 <MenuItem Header="Traffic Chart" Style="{StaticResource DarkMenuItem}" Click="ToggleWindowPane_Click" Tag="TrafficChart" />
                 <MenuItem Header="Info Panel" Style="{StaticResource DarkMenuItem}" Click="ToggleWindowPane_Click" Tag="InfoPanel" />
                 <MenuItem Header="Connection Log" Style="{StaticResource DarkMenuItem}" Click="ToggleWindowPane_Click" Tag="ConnectionLog" />
-                <MenuItem Header="Traffic Statistics" Style="{StaticResource DarkMenuItem}" Click="ToggleWindowPane_Click" Tag="TrafficStats" />
+                <MenuItem Header="Traffic Statistics" Style="{StaticResource DarkMenuItem}" Click="OpenStatsManager_Click" />
+                <MenuItem Header="Traffic Statistics Tab" Style="{StaticResource DarkMenuItem}" Click="OpenTrafficStatsTab_Click" />
                 <Separator />
                 <MenuItem Header="Float / Dock Active Tool Window" Style="{StaticResource DarkMenuItem}" Click="FloatActivePane_Click" />
                 <MenuItem Header="Reset UI Layout" Style="{StaticResource DarkMenuItem}" Click="ResetLayout_Click" />

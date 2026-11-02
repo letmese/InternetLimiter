@@ -1973,6 +1973,7 @@ public partial class MainWindow : Window
 
     private void ToggleWindowPane_Click(object sender, RoutedEventArgs e)
     {
+        if (sender is FrameworkElement { Tag: "TrafficStats" }) { OpenStatsManager_Click(sender, e); return; }
         if (sender is FrameworkElement { Tag: string id } && _dockManager != null)
         {
             if (_dockManager.Panes.TryGetValue(id, out var pane))
@@ -2156,11 +2157,15 @@ public partial class MainWindow : Window
         }
     }
 
+    private StatsManagerWindow? _statsManagerWindow;
     private void OpenStatsManager_Click(object sender, RoutedEventArgs e)
     {
         try
         {
+            if (_statsManagerWindow != null && _statsManagerWindow.IsLoaded) { if (_statsManagerWindow.WindowState == WindowState.Minimized) _statsManagerWindow.WindowState = WindowState.Normal; _statsManagerWindow.Activate(); _statsManagerWindow.Focus(); return; }
             var win = new StatsManagerWindow(_vm) { Owner = this };
+            _statsManagerWindow = win;
+            win.Closed += (_, _) => _statsManagerWindow = null;
             win.Show();
         }
         catch (Exception ex)

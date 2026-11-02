@@ -64,7 +64,7 @@ public sealed class HistoryStore
     }
 
     /// <summary>Adds a delta. Thread-safe, called once per second from a worker thread.</summary>
-    public void Record(string app, long deltaIn, long deltaOut)
+    public void Record(string app, long deltaIn, long deltaOut, bool isLocal = false)
     {
         string key = Normalize(app);
         if (key.Length == 0)
@@ -79,7 +79,7 @@ public sealed class HistoryStore
 
         if (inBytes > 0 || outBytes > 0)
         {
-            try { SqliteStore.Record(key, inBytes, outBytes); } catch { }
+            try { SqliteStore.Record(key, inBytes, outBytes, isLocal: isLocal); } catch { }
         }
 
         DateOnly today = DateOnly.FromDateTime(DateTime.Now);

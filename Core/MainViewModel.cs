@@ -1851,7 +1851,8 @@ public sealed class MainViewModel : Observable, IDisposable
             connRow.RetransBytes = conn.RetransBytes;
 
             split.TryGetValue(conn.Pid, out var halves);
-            split[conn.Pid] = GeoIp.IsPrivate(conn.RemoteIp)
+            bool isLocalConn = GeoIp.IsPrivate(conn.RemoteIp) || conn.RemoteIp == "127.0.0.1" || conn.RemoteIp == "::1";
+            split[conn.Pid] = isLocalConn
                 ? (halves.InetIn, halves.InetOut, halves.LocalIn + conn.InRate, halves.LocalOut + conn.OutRate)
                 : (halves.InetIn + conn.InRate, halves.InetOut + conn.OutRate, halves.LocalIn, halves.LocalOut);
 
@@ -1861,7 +1862,7 @@ public sealed class MainViewModel : Observable, IDisposable
                 pidsRecordedFromConnections.Add(conn.Pid);
                 string app = System.IO.Path.GetFileName(path).ToLowerInvariant();
                 _history.Record(app,
-                    (long)Math.Max(0, conn.InRate), (long)Math.Max(0, conn.OutRate));
+                    (long)Math.Max(0, conn.InRate), (long)Math.Max(0, conn.OutRate), isLocal: isLocalConn);
                 _remoteIpHistory.Record(app, conn.RemoteIp,
                     (long)Math.Max(0, conn.InRate), (long)Math.Max(0, conn.OutRate), 1);
             }
@@ -1970,7 +1971,8 @@ public sealed class MainViewModel : Observable, IDisposable
         foreach (var conn in Connections)
         {
             split.TryGetValue(conn.Pid, out var halves);
-            split[conn.Pid] = GeoIp.IsPrivate(conn.RemoteIp)
+            bool isLocalConn = GeoIp.IsPrivate(conn.RemoteIp) || conn.RemoteIp == "127.0.0.1" || conn.RemoteIp == "::1";
+            split[conn.Pid] = isLocalConn
                 ? (halves.InetIn, halves.InetOut, halves.LocalIn + conn.InRate, halves.LocalOut + conn.OutRate)
                 : (halves.InetIn + conn.InRate, halves.InetOut + conn.OutRate, halves.LocalIn, halves.LocalOut);
         }

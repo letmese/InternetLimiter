@@ -15,6 +15,7 @@ public sealed class HistoryRecordEntry
     public long BytesOut { get; set; }
     public string? RemoteIp { get; set; }
     public DateTime Timestamp { get; set; }
+    public bool IsLocal { get; set; }
 }
 
 public sealed class HourlyBucket
@@ -126,6 +127,12 @@ public sealed class SqliteHistoryStore : IDisposable
                 CREATE INDEX IF NOT EXISTS idx_hourly_hour ON hourly_app_traffic(hour_epoch);
             ";
             cmd.ExecuteNonQuery();
+
+            // Safe column migration for local LAN vs internet traffic tracking
+            try { using var c = _connection.CreateCommand(); c.CommandText = "ALTER TABLE daily_app_traffic ADD COLUMN local_bytes_in INTEGER NOT NULL DEFAULT 0;"; c.ExecuteNonQuery(); } catch { }
+            try { using var c = _connection.CreateCommand(); c.CommandText = "ALTER TABLE daily_app_traffic ADD COLUMN local_bytes_out INTEGER NOT NULL DEFAULT 0;"; c.ExecuteNonQuery(); } catch { }
+            try { using var c = _connection.CreateCommand(); c.CommandText = "ALTER TABLE hourly_app_traffic ADD COLUMN local_bytes_in INTEGER NOT NULL DEFAULT 0;"; c.ExecuteNonQuery(); } catch { }
+            try { using var c = _connection.CreateCommand(); c.CommandText = "ALTER TABLE hourly_app_traffic ADD COLUMN local_bytes_out INTEGER NOT NULL DEFAULT 0;"; c.ExecuteNonQuery(); } catch { }
         }
     }
 
@@ -133,7 +140,7 @@ public sealed class SqliteHistoryStore : IDisposable
     /// Non-blocking write: Enqueues a traffic usage sample to be committed asynchronously.
     /// Never touches disk or locks the SQLite connection from the calling UI thread.
     /// </summary>
-    public void Record(string app, long bytesIn, long bytesOut, string? remoteIp = null, DateTime? timestamp = null)
+    public void Record(string app, long bytesIn, long bytesOut, string? remoteIp = null, DateTime? timestamp = null, bool isLocal = false)
     {
         if (bytesIn <= 0 && bytesOut <= 0) return;
         if (_isDisposed) return;
@@ -155,7 +162,8 @@ public sealed class SqliteHistoryStore : IDisposable
             BytesIn = bytesIn,
             BytesOut = bytesOut,
             RemoteIp = remoteIp,
-            Timestamp = timestamp ?? DateTime.UtcNow
+            Timestamp = timestamp ?? DateTime.UtcNow,
+            IsLocal = isLocal
         });
     }
 
@@ -198,9 +206,9 @@ public sealed class SqliteHistoryStore : IDisposable
             {
                 using var tx = _connection.BeginTransaction();
 
-                using var cmd = _connection.CreateCommand();
-                cmd.Transaction = tx;
-                cmd.CommandText = @"
+                using var cmdInet = _connection.CreateCommand();
+                cmdInet.Transaction = tx;
+                cmdInet.CommandText = @"
                     INSERT INTO daily_app_traffic (app, date_str, bytes_in, bytes_out)
                     VALUES (@app, @date_str, @in, @out)
                     ON CONFLICT(app, date_str) DO UPDATE SET
@@ -213,11 +221,32 @@ public sealed class SqliteHistoryStore : IDisposable
                         bytes_in = bytes_in + @in,
                         bytes_out = bytes_out + @out;
                 ";
-                var pApp = cmd.Parameters.Add("@app", SqliteType.Text);
-                var pDate = cmd.Parameters.Add("@date_str", SqliteType.Text);
-                var pHour = cmd.Parameters.Add("@hour_epoch", SqliteType.Integer);
-                var pIn = cmd.Parameters.Add("@in", SqliteType.Integer);
-                var pOut = cmd.Parameters.Add("@out", SqliteType.Integer);
+                var pApp = cmdInet.Parameters.Add("@app", SqliteType.Text);
+                var pDate = cmdInet.Parameters.Add("@date_str", SqliteType.Text);
+                var pHour = cmdInet.Parameters.Add("@hour_epoch", SqliteType.Integer);
+                var pIn = cmdInet.Parameters.Add("@in", SqliteType.Integer);
+                var pOut = cmdInet.Parameters.Add("@out", SqliteType.Integer);
+
+                using var cmdLocal = _connection.CreateCommand();
+                cmdLocal.Transaction = tx;
+                cmdLocal.CommandText = @"
+                    INSERT INTO daily_app_traffic (app, date_str, local_bytes_in, local_bytes_out)
+                    VALUES (@app, @date_str, @in, @out)
+                    ON CONFLICT(app, date_str) DO UPDATE SET
+                        local_bytes_in = local_bytes_in + @in,
+                        local_bytes_out = local_bytes_out + @out;
+
+                    INSERT INTO hourly_app_traffic (app, hour_epoch, local_bytes_in, local_bytes_out)
+                    VALUES (@app, @hour_epoch, @in, @out)
+                    ON CONFLICT(app, hour_epoch) DO UPDATE SET
+                        local_bytes_in = local_bytes_in + @in,
+                        local_bytes_out = local_bytes_out + @out;
+                ";
+                var lpApp = cmdLocal.Parameters.Add("@app", SqliteType.Text);
+                var lpDate = cmdLocal.Parameters.Add("@date_str", SqliteType.Text);
+                var lpHour = cmdLocal.Parameters.Add("@hour_epoch", SqliteType.Integer);
+                var lpIn = cmdLocal.Parameters.Add("@in", SqliteType.Integer);
+                var lpOut = cmdLocal.Parameters.Add("@out", SqliteType.Integer);
 
                 using var rcmd = _connection.CreateCommand();
                 rcmd.Transaction = tx;
@@ -241,12 +270,24 @@ public sealed class SqliteHistoryStore : IDisposable
                     long hourEpoch = new DateTimeOffset(new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, 0, 0, DateTimeKind.Utc)).ToUnixTimeSeconds();
                     string normApp = string.IsNullOrEmpty(entry.App) ? "system" : entry.App.ToLowerInvariant();
 
-                    pApp.Value = normApp;
-                    pDate.Value = dateStr;
-                    pHour.Value = hourEpoch;
-                    pIn.Value = entry.BytesIn;
-                    pOut.Value = entry.BytesOut;
-                    cmd.ExecuteNonQuery();
+                    if (entry.IsLocal)
+                    {
+                        lpApp.Value = normApp;
+                        lpDate.Value = dateStr;
+                        lpHour.Value = hourEpoch;
+                        lpIn.Value = entry.BytesIn;
+                        lpOut.Value = entry.BytesOut;
+                        cmdLocal.ExecuteNonQuery();
+                    }
+                    else
+                    {
+                        pApp.Value = normApp;
+                        pDate.Value = dateStr;
+                        pHour.Value = hourEpoch;
+                        pIn.Value = entry.BytesIn;
+                        pOut.Value = entry.BytesOut;
+                        cmdInet.ExecuteNonQuery();
+                    }
 
                     if (!string.IsNullOrEmpty(entry.RemoteIp))
                     {
@@ -377,10 +418,13 @@ public sealed class SqliteHistoryStore : IDisposable
         return (0, 0);
     }
 
-    public List<HourlyBucket> QueryHourlySeries(long startEpoch, long endEpoch, string? appFilter = null)
+    public List<HourlyBucket> QueryHourlySeries(long startEpoch, long endEpoch, string? appFilter = null, string zone = "internet")
     {
         FlushSync(300);
         var result = new List<HourlyBucket>();
+        string inCol = zone == "local" ? "local_bytes_in" : (zone == "all" ? "(bytes_in + local_bytes_in)" : "bytes_in");
+        string outCol = zone == "local" ? "local_bytes_out" : (zone == "all" ? "(bytes_out + local_bytes_out)" : "bytes_out");
+
         lock (_lock)
         {
             if (_connection == null || _isDisposed) return result;
@@ -389,8 +433,8 @@ public sealed class SqliteHistoryStore : IDisposable
                 using var cmd = _connection.CreateCommand();
                 if (string.IsNullOrWhiteSpace(appFilter))
                 {
-                    cmd.CommandText = @"
-                        SELECT hour_epoch, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                    cmd.CommandText = $@"
+                        SELECT hour_epoch, SUM({inCol}) AS bin, SUM({outCol}) AS bout
                         FROM hourly_app_traffic
                         WHERE hour_epoch >= @start AND hour_epoch <= @end
                         GROUP BY hour_epoch
@@ -399,8 +443,8 @@ public sealed class SqliteHistoryStore : IDisposable
                 }
                 else
                 {
-                    cmd.CommandText = @"
-                        SELECT hour_epoch, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                    cmd.CommandText = $@"
+                        SELECT hour_epoch, SUM({inCol}) AS bin, SUM({outCol}) AS bout
                         FROM hourly_app_traffic
                         WHERE hour_epoch >= @start AND hour_epoch <= @end AND app = @app
                         GROUP BY hour_epoch
@@ -434,10 +478,13 @@ public sealed class SqliteHistoryStore : IDisposable
         return result;
     }
 
-    public List<HourlyBucket> QueryDailySeries(DateOnly from, DateOnly to, string? appFilter = null)
+    public List<HourlyBucket> QueryDailySeries(DateOnly from, DateOnly to, string? appFilter = null, string zone = "internet")
     {
         FlushSync(300);
         var result = new List<HourlyBucket>();
+        string inCol = zone == "local" ? "local_bytes_in" : (zone == "all" ? "(bytes_in + local_bytes_in)" : "bytes_in");
+        string outCol = zone == "local" ? "local_bytes_out" : (zone == "all" ? "(bytes_out + local_bytes_out)" : "bytes_out");
+
         lock (_lock)
         {
             if (_connection == null || _isDisposed) return result;
@@ -446,8 +493,8 @@ public sealed class SqliteHistoryStore : IDisposable
                 using var cmd = _connection.CreateCommand();
                 if (string.IsNullOrWhiteSpace(appFilter))
                 {
-                    cmd.CommandText = @"
-                        SELECT date_str, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                    cmd.CommandText = $@"
+                        SELECT date_str, SUM({inCol}) AS bin, SUM({outCol}) AS bout
                         FROM daily_app_traffic
                         WHERE date_str >= @from AND date_str <= @to
                         GROUP BY date_str
@@ -456,8 +503,8 @@ public sealed class SqliteHistoryStore : IDisposable
                 }
                 else
                 {
-                    cmd.CommandText = @"
-                        SELECT date_str, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                    cmd.CommandText = $@"
+                        SELECT date_str, SUM({inCol}) AS bin, SUM({outCol}) AS bout
                         FROM daily_app_traffic
                         WHERE date_str >= @from AND date_str <= @to AND app = @app
                         GROUP BY date_str
@@ -495,10 +542,13 @@ public sealed class SqliteHistoryStore : IDisposable
         return result;
     }
 
-    public List<AppRankingSummary> QueryAppRankings(long? startEpoch = null, long? endEpoch = null, DateOnly? from = null, DateOnly? to = null)
+    public List<AppRankingSummary> QueryAppRankings(long? startEpoch = null, long? endEpoch = null, DateOnly? from = null, DateOnly? to = null, string zone = "internet")
     {
         FlushSync(300);
         var list = new List<AppRankingSummary>();
+        string inCol = zone == "local" ? "local_bytes_in" : (zone == "all" ? "(bytes_in + local_bytes_in)" : "bytes_in");
+        string outCol = zone == "local" ? "local_bytes_out" : (zone == "all" ? "(bytes_out + local_bytes_out)" : "bytes_out");
+
         lock (_lock)
         {
             if (_connection == null || _isDisposed) return list;
@@ -507,8 +557,8 @@ public sealed class SqliteHistoryStore : IDisposable
                 using var cmd = _connection.CreateCommand();
                 if (startEpoch.HasValue && endEpoch.HasValue)
                 {
-                    cmd.CommandText = @"
-                        SELECT app, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                    cmd.CommandText = $@"
+                        SELECT app, SUM({inCol}) AS bin, SUM({outCol}) AS bout
                         FROM hourly_app_traffic
                         WHERE hour_epoch >= @start AND hour_epoch <= @end
                         GROUP BY app;
@@ -520,8 +570,8 @@ public sealed class SqliteHistoryStore : IDisposable
                 {
                     string fStr = (from ?? DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-365))).ToString("yyyy-MM-dd");
                     string tStr = (to ?? DateOnly.FromDateTime(DateTime.UtcNow)).ToString("yyyy-MM-dd");
-                    cmd.CommandText = @"
-                        SELECT app, SUM(bytes_in) AS bin, SUM(bytes_out) AS bout
+                    cmd.CommandText = $@"
+                        SELECT app, SUM({inCol}) AS bin, SUM({outCol}) AS bout
                         FROM daily_app_traffic
                         WHERE date_str >= @from AND date_str <= @to
                         GROUP BY app;

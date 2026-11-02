@@ -86,7 +86,7 @@ public partial class SettingsWindow : Window
         var stats = _vm.GetHistoryStats();
         string formattedBytes = Fmt.Bytes(stats.TotalBytes);
         DbStatsText.Text = $"{stats.DayCount} daily records saved ({formattedBytes} on disk)";
-        DataPathText.Text = _vm.DataFolder;
+        DataPathText.Text = @"%LOCALAPPDATA%\Internet Limiter\Data\traffic_history.db";
 
         // 7. Theme
         string theme = settings.Theme ?? "Dark";

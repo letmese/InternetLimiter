@@ -658,6 +658,7 @@ public sealed class MainViewModel : Observable, IDisposable
             Raise(nameof(ConnectionRetransText));
             Raise(nameof(ConnectionCardVisibility));
             Raise(nameof(ProcessCardVisibility));
+            Raise(nameof(MachineCardVisibility));
             Raise(nameof(SelectedProduct));
             Raise(nameof(SelectedVersion));
             Raise(nameof(SelectedCompany));
@@ -730,6 +731,7 @@ public sealed class MainViewModel : Observable, IDisposable
 
     public System.Windows.Visibility ConnectionCardVisibility => IsConnectionSelected ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     public System.Windows.Visibility ProcessCardVisibility => IsProcessSelected ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+    public System.Windows.Visibility MachineCardVisibility => (!IsConnectionSelected && !IsProcessSelected) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     public string KillButtonText => IsConnectionSelected ? "Kill connection" : "Kill connections";
 
     private void RaiseRuleState()

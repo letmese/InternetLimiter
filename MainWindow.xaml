@@ -27,6 +27,7 @@
       <Separator />
       <MenuItem Header="Move to Hidden / Unhide" Style="{StaticResource DarkMenuItem}" Click="MenuToggleHidden_Click" />
       <MenuItem Header="View Traffic Stats" Style="{StaticResource DarkMenuItem}" Click="MenuViewStats_Click" />
+      <MenuItem Header="Stats Manager (Whole PC)…" Style="{StaticResource DarkMenuItem}" Click="OpenStatsManager_Click" />
       <MenuItem Header="View Connection History" Style="{StaticResource DarkMenuItem}" Click="MenuViewHistory_Click" />
       <MenuItem Header="Show app info" Style="{StaticResource DarkMenuItem}" Click="ShowAppInfo_Click" />
       <MenuItem Header="Create Filter from Selection" Style="{StaticResource DarkMenuItem}" Click="MenuCreateFilter_Click" />
@@ -57,6 +58,7 @@
 
     <ContextMenu x:Key="AppRowContextMenu" Style="{StaticResource DarkContextMenu}">
       <MenuItem Header="View Traffic Stats" Style="{StaticResource DarkMenuItem}" Click="MenuViewStats_Click" />
+      <MenuItem Header="Stats Manager (Whole PC)…" Style="{StaticResource DarkMenuItem}" Click="OpenStatsManager_Click" />
       <MenuItem Header="View Connection History" Style="{StaticResource DarkMenuItem}" Click="MenuViewHistory_Click" />
       <Separator />
       <MenuItem Header="Move to Hidden / Unhide" Style="{StaticResource DarkMenuItem}" Click="MenuToggleHidden_Click" />
@@ -105,6 +107,9 @@
                 <MenuItem Header="Delete rules" Style="{StaticResource DarkMenuItem}" Click="DeleteRules_Click" />
                 <MenuItem Header="Block editor…" Style="{StaticResource DarkMenuItem}" Click="OpenBlocker_Click" />
                 <MenuItem Header="Rule editor…" Style="{StaticResource DarkMenuItem}" Click="OpenRuleEditor_Click" />
+                <Separator />
+                <MenuItem Header="Stats Manager (Whole PC)…" Style="{StaticResource DarkMenuItem}" Click="OpenStatsManager_Click" />
+                <MenuItem Header="Traffic Statistics Tab" Style="{StaticResource DarkMenuItem}" Click="OpenTrafficStatsTab_Click" />
                 <Separator />
                 <MenuItem Header="Remote connect…" Style="{StaticResource DarkMenuItem}" Click="RemoteConnect_Click" />
                 <MenuItem Header="Toggle NTFS compression…" Style="{StaticResource DarkMenuItem}" Click="ToggleNtfsCompression_Click" />
@@ -220,6 +225,9 @@
                   Padding="9,4" Margin="6,0,0,0" Click="Snapshot_Click" />
           <Button Name="EmergencyBlockButton" Content="🚫 Emergency Block" Style="{StaticResource BtnDanger}"
                   Padding="10,4" Margin="6,0,0,0" Click="EmergencyBlock_Click" />
+          <Button Content="📊 Stats Manager" Style="{StaticResource Btn}"
+                  Padding="10,4" Margin="6,0,0,0" Click="OpenStatsManager_Click"
+                  ToolTip="View comprehensive historical traffic stats for the whole PC &amp; all applications" />
           <Button Content="⚙ Settings" Style="{StaticResource BtnAccent}"
                   Padding="10,4" Margin="6,0,0,0" Click="Settings_Click" />
 
@@ -906,6 +914,25 @@
               </UniformGrid>
             </Border>
             <StackPanel Name="SecOverview">
+              <!-- WHOLE MACHINE & NETWORK INFO VIEW CARD (when no single app/socket is selected) -->
+              <Border Visibility="{Binding MachineCardVisibility}" Background="{DynamicResource PanelAlt}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,12">
+                <StackPanel>
+                  <DockPanel Margin="0,0,0,6">
+                    <Border DockPanel.Dock="Right" Background="#163824" BorderBrush="#238636" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                      <TextBlock FontFamily="Consolas" FontSize="11" FontWeight="Bold" Foreground="#35D39A" Text="WHOLE NETWORK" />
+                    </Border>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                      <TextBlock Text="💻" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" />
+                      <TextBlock FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource Text}" Text="Whole Network &amp; PC Stats" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </DockPanel>
+                  <TextBlock FontFamily="Segoe UI" FontSize="11" Foreground="{DynamicResource TextDim}" Margin="0,0,0,8" Text="Aggregated real-time and historical network telemetry across all adapters and applications." TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <Button Content="📊 Open Stats Manager…" Style="{StaticResource BtnAccent}" Padding="9,4" Margin="0,0,8,0" FontSize="11" Click="OpenStatsManager_Click" />
+                    <Button Content="📈 View Traffic Stats Tab" Style="{StaticResource Btn}" Padding="9,4" FontSize="11" Click="OpenTrafficStatsTab_Click" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
               <!-- CONNECTION INFO VIEW CARD (when IsConnectionSelected is true) -->
               <Border Visibility="{Binding ConnectionCardVisibility}" Background="{DynamicResource PanelAlt}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,12">
                 <StackPanel>

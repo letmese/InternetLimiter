@@ -1807,7 +1807,8 @@ public partial class MainWindow : Window
         }
         else
         {
-            Tabs.SelectedIndex = 2;
+            SelectTabByHeader("Traffic statistics");
+            _vm?.SetStatsPeriod(7);
         }
     }
 
@@ -2140,5 +2141,38 @@ public partial class MainWindow : Window
         menu.PlacementTarget = anchor;
         menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Top;
         menu.IsOpen = true;
+    }
+
+    private void SelectTabByHeader(string headerText)
+    {
+        if (Tabs == null) return;
+        foreach (TabItem item in Tabs.Items)
+        {
+            if (item.Header is string h && h.Contains(headerText, StringComparison.OrdinalIgnoreCase))
+            {
+                Tabs.SelectedItem = item;
+                return;
+            }
+        }
+    }
+
+    private void OpenStatsManager_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var win = new StatsManagerWindow(_vm) { Owner = this };
+            win.Show();
+        }
+        catch (Exception ex)
+        {
+            EventLogBridge.Warn("Failed to open StatsManagerWindow: " + ex.Message);
+            SelectTabByHeader("Traffic statistics");
+        }
+    }
+
+    private void OpenTrafficStatsTab_Click(object sender, RoutedEventArgs e)
+    {
+        SelectTabByHeader("Traffic statistics");
+        _vm?.SetStatsPeriod(7);
     }
 }

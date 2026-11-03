@@ -1,4 +1,4 @@
-<Window x:Class="InternetLimiter.Installer.MainWindow"
+﻿<Window x:Class="InternetLimiter.Installer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Internet Limiter Setup"
@@ -138,6 +138,7 @@
                         </CheckBox>
                         <CheckBox x:Name="ChkDesktopShortcut" IsChecked="True" Content="Create Desktop shortcut" Margin="0,8,0,4" />
                         <CheckBox x:Name="ChkStartMenuShortcut" IsChecked="True" Content="Create Start Menu shortcut" Margin="0,4,0,4" />
+                        <CheckBox x:Name="ChkStartWithWindows" IsChecked="True" Content="Start Internet Limiter automatically when Windows boots" Margin="0,4,0,4" />
                         <CheckBox x:Name="ChkLaunchApp" IsChecked="True" Content="Launch Internet Limiter when setup finishes" Margin="0,4,0,0" />
                     </StackPanel>
                 </Border>

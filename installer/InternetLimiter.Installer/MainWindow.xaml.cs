@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -85,6 +85,7 @@ public partial class MainWindow : Window
 
         bool installService = ChkService.IsChecked == true;
         bool createShortcuts = (ChkDesktopShortcut.IsChecked == true) || (ChkStartMenuShortcut.IsChecked == true);
+        bool startWithWindows = ChkStartWithWindows.IsChecked == true;
 
         // Switch to progress view
         ConfigPanel.Visibility = Visibility.Collapsed;
@@ -97,7 +98,7 @@ public partial class MainWindow : Window
         {
             await Task.Run(() =>
             {
-                _engine.PerformInstall(targetDir, installService, createShortcuts, (message, percent) =>
+                _engine.PerformInstall(targetDir, installService, createShortcuts, startWithWindows, (message, percent) =>
                 {
                     Dispatcher.Invoke(() =>
                     {

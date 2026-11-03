@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using Valve.Views;
@@ -1728,19 +1728,64 @@ public sealed class MainViewModel : Observable, IDisposable
     {
         try
         {
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
-            if (key == null) return;
             string appPath = Environment.ProcessPath ?? "";
-            if (string.IsNullOrEmpty(appPath)) return;
+            if (string.IsNullOrEmpty(appPath))
+            {
+                appPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "InternetLimiter.exe");
+                if (!System.IO.File.Exists(appPath))
+                    appPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Valve.exe");
+            }
 
-            if (enable)
+            using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
             {
-                key.SetValue("Valve", $"\"{appPath}\"");
+                if (key != null)
+                {
+                    key.DeleteValue("Valve", false);
+                    if (enable && System.IO.File.Exists(appPath))
+                    {
+                        key.SetValue("InternetLimiter", $"\"{appPath}\" --startup");
+                    }
+                    else
+                    {
+                        key.DeleteValue("InternetLimiter", false);
+                    }
+                }
             }
-            else
+
+            // Also check/clean HKLM if running with admin rights
+            try
             {
-                key.DeleteValue("Valve", false);
+                using var hklmKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
+                if (hklmKey != null)
+                {
+                    hklmKey.DeleteValue("Valve", false);
+                    if (enable && System.IO.File.Exists(appPath))
+                    {
+                        hklmKey.SetValue("InternetLimiter", $"\"{appPath}\" --startup");
+                    }
+                    else
+                    {
+                        hklmKey.DeleteValue("InternetLimiter", false);
+                    }
+                }
             }
+            catch { }
+
+            // Manage User Startup shortcut
+            try
+            {
+                string startupFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                string lnkPath = System.IO.Path.Combine(startupFolder, "Internet Limiter.lnk");
+                if (enable && System.IO.File.Exists(appPath))
+                {
+                    ServiceManager.CreateLnk(lnkPath, appPath, AppDomain.CurrentDomain.BaseDirectory, appPath, "Internet Limiter - Network Bandwidth Shaper & Firewall", "--startup");
+                }
+                else if (System.IO.File.Exists(lnkPath))
+                {
+                    System.IO.File.Delete(lnkPath);
+                }
+            }
+            catch { }
         }
         catch
         {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -32,9 +32,10 @@ public partial class App : Application
 
                 bool installService = !e.Args.Contains("--no-service");
                 bool createShortcuts = !e.Args.Contains("--no-shortcuts");
+                bool startWithWindows = !e.Args.Contains("--no-startup");
 
                 var engine = new InstallerEngine();
-                engine.PerformInstall(targetDir, installService, createShortcuts, null);
+                engine.PerformInstall(targetDir, installService, createShortcuts, startWithWindows, null);
                 Environment.Exit(0);
             }
             catch (Exception ex)

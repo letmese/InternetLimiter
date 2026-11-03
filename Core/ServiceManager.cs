@@ -26,9 +26,18 @@ public static class ServiceManager
 
         try
         {
-            // 1. If service already exists, stop and delete it first
+            // 1. If service already exists, configure or recreate it
             if (IsServiceInstalled())
             {
+                var (cfgCode, _) = RunSc($"config {ServiceName} binPath= \"{binPath}\" start= auto DisplayName= \"{DisplayName}\"");
+                if (cfgCode == 0)
+                {
+                    RunSc($"description {ServiceName} \"High-Performance Real-Time Network Traffic Control and Bandwidth Shaper Service\"");
+                    RunSc($"failure {ServiceName} reset= 86400 actions= restart/5000/restart/10000//1000");
+                    RunSc($"start {ServiceName}");
+                    return (true, "Service configured and started successfully.");
+                }
+
                 RunSc($"stop {ServiceName}");
                 RunSc($"delete {ServiceName}");
                 Thread.Sleep(500);
@@ -149,11 +158,29 @@ public static class ServiceManager
 
             string startMenuShortcut = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "Internet Limiter.lnk");
             if (File.Exists(startMenuShortcut)) File.Delete(startMenuShortcut);
+
+            string commonStartup = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), "Internet Limiter.lnk");
+            if (File.Exists(commonStartup)) File.Delete(commonStartup);
+
+            string userStartup = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "Internet Limiter.lnk");
+            if (File.Exists(userStartup)) File.Delete(userStartup);
+
+            using (var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+            {
+                key?.DeleteValue("InternetLimiter", false);
+                key?.DeleteValue("Valve", false);
+            }
+
+            using (var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+            {
+                key?.DeleteValue("InternetLimiter", false);
+                key?.DeleteValue("Valve", false);
+            }
         }
         catch { }
     }
 
-    private static void CreateLnk(string lnkPath, string targetExe, string workingDir, string iconLocation, string description)
+    public static void CreateLnk(string lnkPath, string targetExe, string workingDir, string iconLocation, string description, string arguments = "")
     {
         try
         {
@@ -163,6 +190,7 @@ public static class ServiceManager
             dynamic shortcut = shell.CreateShortcut(lnkPath);
             shortcut.TargetPath = targetExe;
             shortcut.WorkingDirectory = workingDir;
+            if (!string.IsNullOrEmpty(arguments)) shortcut.Arguments = arguments;
             shortcut.IconLocation = $"{iconLocation},0";
             shortcut.Description = description;
             shortcut.Save();

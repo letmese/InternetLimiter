@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$PublishDir = "$PSScriptRoot\..\publish",
     [string]$InstallerDir = "$PSScriptRoot\InternetLimiter.Installer",
     [string]$OutputDir = "$PSScriptRoot\out",

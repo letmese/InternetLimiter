@@ -87,7 +87,7 @@ public sealed class Settings
     public double SampleIntervalSeconds { get; set; } = 1.0;
     public bool UseBits { get; set; }
     public bool MinimizeToTray { get; set; } = true;
-    public bool StartMinimized { get; set; }
+    public bool StartMinimized { get; set; } = true;
     public bool ResolveLocations { get; set; } = false; // Default false for privacy/security
     public bool BlockerEnabled { get; set; } = false;
     public bool LimiterEnabled { get; set; } = false;
@@ -99,7 +99,7 @@ public sealed class Settings
     public int StatsDbSizeLimitMB { get; set; } = 2048; // 13.15: warn when stats DB exceeds this size
     public int FirstDayOfMonth { get; set; } = 1;      // 26.06: day of month that starts a billing/stats month
     public int TemporaryBlockMinutes { get; set; } = 5; // 3.04: "For a while" temporary allow/deny duration
-    public bool StartWithWindows { get; set; }
+    public bool StartWithWindows { get; set; } = true;
     public bool CloseToTray { get; set; } = true;
     public int RemotePort { get; set; } = 4045;              // 15.x: remote admin listen port
     public string RemoteToken { get; set; } = "";            // 15.x: shared auth token for remote admin

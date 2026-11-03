@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.IO;
 using System.Windows;
 using Valve.Core;
@@ -10,6 +10,7 @@ public partial class App : Application
     private MainViewModel? _viewModel;
     private System.Windows.Forms.NotifyIcon? _tray;
     private bool _userDeclinedUac;
+    private static System.Threading.Mutex? _singleInstanceMutex;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -81,8 +82,46 @@ public partial class App : Application
             return;
         }
 
+        // Single UI instance check
+        bool isTestOrScreenshot = e.Args.Contains("--test-dialogs") || e.Args.Contains("--test-dock") || e.Args.Contains("--capture-screenshots");
+        if (!isTestOrScreenshot)
+        {
+            _singleInstanceMutex = new System.Threading.Mutex(true, @"Local\InternetLimiter_SingleInstance_UI_Mutex", out bool createdNew);
+            if (!createdNew)
+            {
+                IntPtr existingHwnd = Valve.Interop.Native.FindWindow(null, "Internet Limiter");
+                if (existingHwnd == IntPtr.Zero) existingHwnd = Valve.Interop.Native.FindWindow(null, "Valve");
+                if (existingHwnd != IntPtr.Zero)
+                {
+                    Valve.Interop.Native.ShowWindow(existingHwnd, Valve.Interop.Native.SW_RESTORE);
+                    Valve.Interop.Native.SetForegroundWindow(existingHwnd);
+                }
+                Shutdown(0);
+                return;
+            }
+        }
+
         // 2. Client-Service fast startup: if service is running, launch GUI instantly without UAC prompt!
-        if (Valve.Core.ValveIpcClient.IsServiceRunning())
+        bool isStartup = e.Args.Contains("--startup");
+        bool serviceRunning = false;
+        if (isStartup)
+        {
+            for (int i = 0; i < 12; i++)
+            {
+                if (Valve.Core.ValveIpcClient.IsServiceRunning(250))
+                {
+                    serviceRunning = true;
+                    break;
+                }
+                System.Threading.Thread.Sleep(250);
+            }
+        }
+        else
+        {
+            serviceRunning = Valve.Core.ValveIpcClient.IsServiceRunning();
+        }
+
+        if (serviceRunning)
         {
             try
             {
@@ -149,7 +188,6 @@ public partial class App : Application
 
         var window = new MainWindow(_viewModel);
         MainWindow = window;
-        window.Show();
 
         SetUpTray(window);
 
@@ -163,6 +201,25 @@ public partial class App : Application
                 window.Hide();
             }
         };
+
+        bool startMinimized = e.Args.Contains("--startup") || _viewModel.CurrentSettings.StartMinimized;
+        if (startMinimized)
+        {
+            window.WindowState = WindowState.Minimized;
+            if (_viewModel.CurrentSettings.MinimizeToTray)
+            {
+                var _ = new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
+                window.Hide();
+            }
+            else
+            {
+                window.Show();
+            }
+        }
+        else
+        {
+            window.Show();
+        }
 
         _viewModel.GraphUpdated += () =>
         {

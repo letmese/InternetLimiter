@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -14,7 +14,7 @@ public class InstallerEngine
     public const string DisplayName = "Internet Limiter Service";
     public const string UninstallRegistryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\InternetLimiter";
 
-    public void PerformInstall(string targetDir, bool installService, bool createShortcuts, Action<string, int>? progressCallback)
+    public void PerformInstall(string targetDir, bool installService, bool createShortcuts, bool startWithWindows = true, Action<string, int>? progressCallback = null)
     {
         Report(progressCallback, "Preparing installation environment...", 5);
 
@@ -59,8 +59,15 @@ public class InstallerEngine
         // 5. Create shortcuts
         if (createShortcuts)
         {
-            Report(progressCallback, "Creating Desktop and Start Menu shortcuts...", 85);
+            Report(progressCallback, "Creating Desktop and Start Menu shortcuts...", 80);
             CreateShortcuts(mainExe, targetDir);
+        }
+
+        // 5b. Configure automatic Windows startup
+        if (startWithWindows)
+        {
+            Report(progressCallback, "Configuring automatic startup on Windows boot...", 90);
+            ConfigureAutoStartup(mainExe, targetDir);
         }
 
         // 6. Register in Windows Add/Remove Programs
@@ -167,13 +174,18 @@ public class InstallerEngine
 
         try
         {
-            // Stop and delete old service if exists
-            RunSc($"stop {ServiceName}");
-            RunSc($"delete {ServiceName}");
-            Thread.Sleep(500);
+            // Try config first if service already exists
+            var (cfgCode, _) = RunSc($"config {ServiceName} binPath= \"{binPath}\" start= auto DisplayName= \"{DisplayName}\"");
+            if (cfgCode != 0)
+            {
+                // Stop and delete old service if stuck
+                RunSc($"stop {ServiceName}");
+                RunSc($"delete {ServiceName}");
+                Thread.Sleep(500);
 
-            // Create service set to Automatic startup
-            var (createCode, createOut) = RunSc($"create {ServiceName} binPath= \"{binPath}\" start= auto DisplayName= \"{DisplayName}\"");
+                // Create service set to Automatic startup
+                RunSc($"create {ServiceName} binPath= \"{binPath}\" start= auto DisplayName= \"{DisplayName}\"");
+            }
             
             // Set service description
             RunSc($"description {ServiceName} \"High-Performance Real-Time Network Traffic Control and Bandwidth Shaper Service\"");
@@ -182,8 +194,56 @@ public class InstallerEngine
             RunSc($"failure {ServiceName} reset= 86400 actions= restart/5000/restart/10000//1000");
 
             // Start service immediately
-            var (startCode, startOut) = RunSc($"start {ServiceName}");
+            RunSc($"start {ServiceName}");
             Thread.Sleep(500);
+        }
+        catch { }
+    }
+
+    private void ConfigureAutoStartup(string targetExe, string targetDir)
+    {
+        try
+        {
+            string args = "--startup";
+            string startupCmd = $"\"{targetExe}\" {args}";
+            string iconPath = Path.Combine(targetDir, "Assets", "app.ico");
+            if (!File.Exists(iconPath)) iconPath = targetExe;
+
+            // 1. Registry HKLM Run (system-wide startup for all users)
+            try
+            {
+                using var hklmKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+                if (hklmKey != null)
+                {
+                    hklmKey.SetValue("InternetLimiter", startupCmd);
+                    hklmKey.DeleteValue("Valve", false);
+                }
+            }
+            catch { }
+
+            // 2. Registry HKCU Run (current user)
+            try
+            {
+                using var hkcuKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+                if (hkcuKey != null)
+                {
+                    hkcuKey.SetValue("InternetLimiter", startupCmd);
+                    hkcuKey.DeleteValue("Valve", false);
+                }
+            }
+            catch { }
+
+            // 3. Common Startup folder shortcut (runs on any user login)
+            try
+            {
+                string commonStartupDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+                if (Directory.Exists(commonStartupDir))
+                {
+                    string startupShortcut = Path.Combine(commonStartupDir, "Internet Limiter.lnk");
+                    CreateLnk(startupShortcut, targetExe, targetDir, iconPath, "Internet Limiter - Network Bandwidth Shaper & Firewall", args);
+                }
+            }
+            catch { }
         }
         catch { }
     }
@@ -208,7 +268,7 @@ public class InstallerEngine
         catch { }
     }
 
-    private static void CreateLnk(string lnkPath, string targetExe, string workingDir, string iconLocation, string description)
+    private static void CreateLnk(string lnkPath, string targetExe, string workingDir, string iconLocation, string description, string arguments = "")
     {
         try
         {
@@ -218,6 +278,7 @@ public class InstallerEngine
             dynamic shortcut = shell.CreateShortcut(lnkPath);
             shortcut.TargetPath = targetExe;
             shortcut.WorkingDirectory = workingDir;
+            if (!string.IsNullOrEmpty(arguments)) shortcut.Arguments = arguments;
             shortcut.IconLocation = $"{iconLocation},0";
             shortcut.Description = description;
             shortcut.Save();

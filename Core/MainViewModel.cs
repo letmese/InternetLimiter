@@ -1252,7 +1252,7 @@ public sealed class MainViewModel : Observable, IDisposable
                 {
                     parts.Add("shaper standby");
                 }
-                else if (_divertShaper.IsEngineActive && _divertShaper.IsLimiterEnabled && _divertShaper.HasActiveLimits)
+                else if (_divertShaper.IsLimiterEnabled && _divertShaper.HasActiveLimits)
                 {
                     parts.Add("download limiter active");
                 }
@@ -1916,7 +1916,7 @@ public sealed class MainViewModel : Observable, IDisposable
             }
         }
 
-        if (_divertShaper.IsEngineActive)
+        if (_divertShaper.IsAvailable)
         {
             foreach (int pid in _divertShaper.GetActivePids())
             {
@@ -2075,7 +2075,7 @@ public sealed class MainViewModel : Observable, IDisposable
         {
             Note = "Packet engine unavailable — monitoring only (ESTATS)";
         }
-        else if (_divertShaper.IsEngineActive && (DateTime.UtcNow - _divertShaper.LastPacketUtc).TotalSeconds > 5.0 && (TotalIn > 0 || TotalOut > 0))
+        else if (_divertShaper.IsAvailable && (DateTime.UtcNow - _divertShaper.LastPacketUtc).TotalSeconds > 5.0 && (TotalIn > 0 || TotalOut > 0))
         {
             Note = "Packet engine heartbeat stale — monitoring only (ESTATS)";
         }
@@ -2136,7 +2136,7 @@ public sealed class MainViewModel : Observable, IDisposable
     private void ApplyDriverRates(ISet<int>? pidsRecordedFromConnections = null)
     {
         bool useService = IsConnectedToService;
-        bool useDivert = _divertShaper.IsEngineActive && (DateTime.UtcNow - _divertShaper.LastPacketUtc).TotalSeconds <= 5.0;
+        bool useDivert = _divertShaper.IsAvailable && (DateTime.UtcNow - _divertShaper.LastPacketUtc).TotalSeconds <= 5.0;
         bool useDriver = _driver.IsAvailable;
 
         if (!useService && !useDivert && !useDriver)

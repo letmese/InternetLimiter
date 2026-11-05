@@ -34,6 +34,10 @@ public sealed class WinDivertShaper : IDisposable
     private readonly ConcurrentDictionary<ushort, int> _portToPid = new();
 
     // Telemetry throughput accumulators
+    private readonly ulong[] _fastBytesIn = new ulong[65536];
+    private readonly ulong[] _fastBytesOut = new ulong[65536];
+    private volatile bool _isSniffMode = true;
+    public bool IsSniffMode => _isSniffMode;
     private readonly ConcurrentDictionary<int, ulong> _bytesIn = new();
     private readonly ConcurrentDictionary<int, ulong> _bytesOut = new();
     private readonly ConcurrentDictionary<int, DateTime> _pidLastSeen = new();
@@ -315,19 +319,25 @@ public sealed class WinDivertShaper : IDisposable
         lock (_engineLock)
         {
             if (_disposed) return;
-            bool needed = NeedsPacketInterception;
-            if (needed && _workerThread == null)
+            bool targetSniff = !NeedsPacketInterception;
+
+            // If already running in the desired mode, keep running
+            if (_workerThread != null && _isSniffMode == targetSniff)
             {
-                StartWorkers();
+                return;
             }
-            else if (!needed && _workerThread != null)
+
+            // If switching modes, restart workers cleanly
+            if (_workerThread != null)
             {
                 StopWorkers();
             }
+
+            StartWorkers(targetSniff);
         }
     }
 
-    private void StartWorkers()
+    private void StartWorkers(bool sniffMode)
     {
         if (_disposed || _workerThread != null) return;
         if (!_driverFilesPresent.Value)
@@ -339,7 +349,10 @@ public sealed class WinDivertShaper : IDisposable
 
         try
         {
-            if (!_timerPeriodActive)
+            _isSniffMode = sniffMode;
+            var flag = sniffMode ? WinDivertFlag.Sniff : WinDivertFlag.None;
+
+            if (!sniffMode && !_timerPeriodActive)
             {
                 try
                 {
@@ -351,7 +364,7 @@ public sealed class WinDivertShaper : IDisposable
                 catch { }
             }
 
-            _divert = new WinDivert("!loopback and (tcp or udp)", WinDivertLayer.Network, 0, WinDivertFlag.None)
+            _divert = new WinDivert("!loopback and (tcp or udp)", WinDivertLayer.Network, 0, flag)
             {
                 QueueLength = 16384,
                 QueueSize = 32 * 1024 * 1024,
@@ -367,23 +380,26 @@ public sealed class WinDivertShaper : IDisposable
             {
                 IsBackground = true,
                 Priority = ThreadPriority.Normal,
-                Name = "WinDivert-ActivePacketRouter"
+                Name = sniffMode ? "WinDivert-SniffMonitor" : "WinDivert-ActivePacketRouter"
             };
             _workerThread.Start();
 
-            _pacerThread = new Thread(PacerLoop)
+            if (!sniffMode)
             {
-                IsBackground = true,
-                Priority = ThreadPriority.Normal,
-                Name = "WinDivert-PrecisionPacer"
-            };
-            _pacerThread.Start();
+                _pacerThread = new Thread(PacerLoop)
+                {
+                    IsBackground = true,
+                    Priority = ThreadPriority.Normal,
+                    Name = "WinDivert-PrecisionPacer"
+                };
+                _pacerThread.Start();
+            }
 
-            EventLogBridge.Info("WinDivert interception engine started on demand.");
+            EventLogBridge.Info($"WinDivert engine started (mode: {(sniffMode ? "Sniff/0% CPU" : "Active Shaping")}).");
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to start active WinDivert shaper: {ex.Message}");
+            Debug.WriteLine($"Failed to start WinDivert shaper: {ex.Message}");
             _available = false;
             UnavailableReason = $"handle open failed: {ex.Message}";
         }
@@ -982,14 +998,31 @@ public sealed class WinDivertShaper : IDisposable
                         _pidLastSeen[pid] = DateTime.UtcNow;
                     }
 
-                    // FAST BYPASS 1: Entire machine has no active limits, no blocker, and no priorities active
+                    // Update per-PID telemetry accumulators
+                    if (pid > 0)
+                    {
+                        if (isOutbound)
+                        {
+                            if (pid < 65536) Interlocked.Add(ref _fastBytesOut[pid], (ulong)recvLen);
+                            _bytesOut.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
+                        }
+                        else
+                        {
+                            if (pid < 65536) Interlocked.Add(ref _fastBytesIn[pid], (ulong)recvLen);
+                            _bytesIn.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
+                        }
+                    }
+
+                    // In Sniff mode: Windows kernel already forwarded the packet at native line speed.
+                    // DO NOT call divert.Send()!
+                    if (_isSniffMode)
+                    {
+                        continue;
+                    }
+
+                    // FAST BYPASS 1: In active diversion mode, forward immediately if stream is unthrottled
                     if (!IsBlockerEnabled && !IsPrioritiesEnabled && !HasActiveLimits && !HasActiveUnifiedRules)
                     {
-                        if (pid > 0)
-                        {
-                            if (isOutbound) _bytesOut.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
-                            else _bytesIn.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
-                        }
                         divert.Send(packet, addr);
                         continue;
                     }
@@ -1183,7 +1216,7 @@ public sealed class WinDivertShaper : IDisposable
                         continue;
                     }
 
-                    // FAST-PATH WIRE-SPEED BYPASS CHECK (< 5 Âµs latency overhead)
+                    // FAST-PATH WIRE-SPEED BYPASS CHECK (< 5 µs latency overhead)
                     // If no limits (neither global nor individual) and no priorities are active:
                     if (!IsLimiterEnabled && !HasActiveLimits && !HasActiveUnifiedRules && !IsPrioritiesEnabled)
                     {

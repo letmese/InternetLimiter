@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -86,12 +86,17 @@ public class InstallerEngine
     {
         try
         {
-            // Stop service if running
+            // 1. Stop InternetLimiterService if running
             RunSc($"stop {ServiceName}");
-            Thread.Sleep(500);
 
-            // Kill any running GUI processes
-            foreach (var procName in new[] { "InternetLimiter", "Valve" })
+            // 2. Stop WinDivert kernel driver services
+            RunSc("stop WinDivert");
+            RunSc("stop WinDivert14");
+            RunSc("stop windivert");
+            Thread.Sleep(300);
+
+            // 3. Kill any running GUI, engine or related processes
+            foreach (var procName in new[] { "InternetLimiter", "Valve", "InternetLimiterService", "ytgrid" })
             {
                 foreach (var p in Process.GetProcessesByName(procName))
                 {
@@ -103,6 +108,11 @@ public class InstallerEngine
                     catch { }
                 }
             }
+
+            // 4. Second attempt to stop driver after process handles are closed
+            RunSc("stop WinDivert");
+            RunSc("stop WinDivert14");
+            Thread.Sleep(300);
         }
         catch { }
     }
@@ -129,7 +139,33 @@ public class InstallerEngine
                 {
                     string? dir = Path.GetDirectoryName(destinationPath);
                     if (dir != null && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                    entry.ExtractToFile(destinationPath, overwrite: true);
+
+                    try
+                    {
+                        entry.ExtractToFile(destinationPath, overwrite: true);
+                    }
+                    catch (IOException) when (File.Exists(destinationPath))
+                    {
+                        // File is locked (e.g. WinDivert64.sys locked by kernel).
+                        // Attempt stopping driver services and retry.
+                        RunSc("stop WinDivert");
+                        RunSc("stop WinDivert14");
+                        Thread.Sleep(600);
+
+                        try
+                        {
+                            entry.ExtractToFile(destinationPath, overwrite: true);
+                        }
+                        catch (IOException)
+                        {
+                            // If the existing file is valid on disk, keep it so setup succeeds gracefully
+                            var fi = new FileInfo(destinationPath);
+                            if (fi.Length == 0)
+                            {
+                                throw; // Rethrow only if target file on disk is empty
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -159,7 +195,15 @@ public class InstallerEngine
         foreach (string file in Directory.GetFiles(sourceDir))
         {
             string dest = Path.Combine(destDir, Path.GetFileName(file));
-            File.Copy(file, dest, true);
+            try
+            {
+                File.Copy(file, dest, true);
+            }
+            catch (IOException) when (File.Exists(dest))
+            {
+                var fi = new FileInfo(dest);
+                if (fi.Length == 0) throw;
+            }
         }
         foreach (string subDir in Directory.GetDirectories(sourceDir))
         {

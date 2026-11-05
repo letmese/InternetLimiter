@@ -123,50 +123,89 @@ public static class RuleEvaluator
             }
         }
 
-        // --- PRECEDENCE TIER 1: IGNORE RULES (Item 4.03, 4.04) ---
-        var ignoreRules = matchingRules.Where(r => r.Type == RuleType.Ignore).ToList();
-        if (ignoreRules.Count > 0)
-        {
-            // If any IgnoreData rule matches, immediately wire-speed bypass without stats (VPN double-counting solution)
-            if (ignoreRules.Any(r => r.IgnoreMode == IgnoreType.IgnoreData))
-            {
-                result.IsBypassed = true;
-                result.CountInStats = false;
-                result.EffectiveLimitKbps = 0;
-                return result;
-            }
+        if (matchingRules.Count == 0) return result;
 
-            // If IgnoreLimit matches, bypass limits while remaining counted in stats
-            if (ignoreRules.Any(r => r.IgnoreMode == IgnoreType.IgnoreLimit))
+        // Single pass over matching rules with zero LINQ allocations
+        UnifiedRule? winningBlocker = null;
+        int minLimit = 0;
+        TrafficPriority maxPriority = TrafficPriority.Normal;
+        bool hasPriority = false;
+
+        for (int i = 0; i < matchingRules.Count; i++)
+        {
+            var r = matchingRules[i];
+            if (r.Type == RuleType.Ignore)
             {
-                result.IsBypassed = true;
-                result.CountInStats = true;
-                result.EffectiveLimitKbps = 0;
+                if (r.IgnoreMode == IgnoreType.IgnoreData)
+                {
+                    result.IsBypassed = true;
+                    result.CountInStats = false;
+                    result.EffectiveLimitKbps = 0;
+                    return result;
+                }
+                if (r.IgnoreMode == IgnoreType.IgnoreLimit)
+                {
+                    result.IsBypassed = true;
+                    result.CountInStats = true;
+                    result.EffectiveLimitKbps = 0;
+                }
+            }
+            else if (r.Type == RuleType.Blocker)
+            {
+                if (winningBlocker == null)
+                {
+                    winningBlocker = r;
+                }
+                else
+                {
+                    int cmp = r.Weight.CompareTo(winningBlocker.Weight);
+                    if (cmp > 0)
+                    {
+                        winningBlocker = r;
+                    }
+                    else if (cmp == 0)
+                    {
+                        static int ActionRank(BlockerAction s) => s switch
+                        {
+                            BlockerAction.Deny => 0,
+                            BlockerAction.Allow => 1,
+                            BlockerAction.Ask => 2,
+                            _ => 3
+                        };
+                        if (ActionRank(r.BlockerAction) < ActionRank(winningBlocker.BlockerAction))
+                        {
+                            winningBlocker = r;
+                        }
+                    }
+                }
+            }
+            else if (r.Type == RuleType.Quota && r.QuotaBytes > 0)
+            {
+                if (r.CurrentUsageIn + r.CurrentUsageOut >= r.QuotaBytes)
+                {
+                    result.QuotaExceeded = true;
+                    result.QuotaAction = r.QuotaExceededAction;
+                }
+            }
+            else if (r.Type == RuleType.Limit && r.LimitKbps > 0)
+            {
+                if (minLimit == 0 || r.LimitKbps < minLimit)
+                {
+                    minLimit = r.LimitKbps;
+                }
+            }
+            else if (r.Type == RuleType.Priority)
+            {
+                if (!hasPriority || r.PriorityLevel > maxPriority)
+                {
+                    maxPriority = r.PriorityLevel;
+                    hasPriority = true;
+                }
             }
         }
 
-        // --- PRECEDENCE TIER 2: BLOCKER RULES (Item 3.07, 4.04) ---
-        var blockerRules = matchingRules.Where(r => r.Type == RuleType.Blocker).ToList();
-        if (blockerRules.Count > 0)
+        if (winningBlocker != null)
         {
-            // Sort by Weight descending, tie-break: Deny > Allow > Ask
-            blockerRules.Sort((a, b) =>
-            {
-                int cmp = b.Weight.CompareTo(a.Weight);
-                if (cmp != 0) return cmp;
-
-                int ActionRank(BlockerAction s) => s switch
-                {
-                    BlockerAction.Deny => 0,
-                    BlockerAction.Allow => 1,
-                    BlockerAction.Ask => 2,
-                    _ => 3
-                };
-
-                return ActionRank(a.BlockerAction).CompareTo(ActionRank(b.BlockerAction));
-            });
-
-            var winningBlocker = blockerRules[0];
             result.BlockAction = winningBlocker.BlockerAction;
             if (result.BlockAction == BlockerAction.Deny)
             {
@@ -174,36 +213,10 @@ public static class RuleEvaluator
             }
         }
 
-        // --- PRECEDENCE TIER 3: QUOTAS, LIMITS, PRIORITIES ---
-        // 3a. Quotas
-        var quotaRules = matchingRules.Where(r => r.Type == RuleType.Quota && r.QuotaBytes > 0).ToList();
-        foreach (var qr in quotaRules)
-        {
-            if (qr.CurrentUsageIn + qr.CurrentUsageOut >= qr.QuotaBytes)
-            {
-                result.QuotaExceeded = true;
-                result.QuotaAction = qr.QuotaExceededAction;
-            }
-        }
-
-        // 3b. Limits
         if (!result.IsBypassed)
         {
-            var limitRules = matchingRules.Where(r => r.Type == RuleType.Limit && r.LimitKbps > 0).ToList();
-            if (limitRules.Count > 0)
-            {
-                result.EffectiveLimitKbps = limitRules.Min(r => r.LimitKbps);
-            }
-        }
-
-        // 3c. Priorities
-        if (!result.IsBypassed)
-        {
-            var priorityRules = matchingRules.Where(r => r.Type == RuleType.Priority).ToList();
-            if (priorityRules.Count > 0)
-            {
-                result.Priority = priorityRules.Max(r => r.PriorityLevel);
-            }
+            if (minLimit > 0) result.EffectiveLimitKbps = minLimit;
+            if (hasPriority) result.Priority = maxPriority;
         }
 
         return result;
@@ -379,4 +392,3 @@ public static class RuleEvaluator
         }
     }
 }
-

@@ -1965,16 +1965,7 @@ public sealed class MainViewModel : Observable, IDisposable
                 row.LastActiveUtc = DateTime.UtcNow;
             }
 
-            bool isAlive = false;
-            try
-            {
-                using var proc = System.Diagnostics.Process.GetProcessById(pid);
-                isAlive = !proc.HasExited;
-            }
-            catch
-            {
-                isAlive = false;
-            }
+            bool isAlive = Valve.Interop.Native.IsProcessAlive(pid);
             row.IsAlive = isAlive;
 
             bool hasRulesOrLimits = row.DownloadLimitKbps > 0 || row.LimitKbps > 0 || row.IsBlocked;

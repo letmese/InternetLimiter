@@ -92,8 +92,33 @@ public sealed class WinDivertShaper : IDisposable
     private readonly ConcurrentDictionary<int, string> _pidToAppPath = new();
     public DnsResolver? DnsResolver { get; set; }
 
-    public void SetUnifiedRules(IEnumerable<UnifiedRule> rules) => _unifiedRules = rules?.ToList() ?? new();
-    public void SetFilters(IEnumerable<FilterRule> filters) => _filters = filters?.ToList() ?? new();
+    private readonly struct FlowCacheEntry
+    {
+        public readonly RuleEvaluationResult Result;
+        public readonly string AppName;
+        public readonly string AppPath;
+        public readonly string LocalIp;
+        public readonly string RemoteIp;
+        public readonly bool IsLocal;
+        public readonly long Timestamp;
+
+        public FlowCacheEntry(RuleEvaluationResult result, string appName, string appPath, string localIp, string remoteIp, bool isLocal, long timestamp)
+        {
+            Result = result;
+            AppName = appName;
+            AppPath = appPath;
+            LocalIp = localIp;
+            RemoteIp = remoteIp;
+            IsLocal = isLocal;
+            Timestamp = timestamp;
+        }
+    }
+    private readonly ConcurrentDictionary<ulong, FlowCacheEntry> _flowCache = new();
+    private static readonly Func<int, ulong, ulong> AddLenFactory = static (_, len) => len;
+    private static readonly Func<int, ulong, ulong, ulong> UpdateLenFactory = static (_, old, len) => old + len;
+
+    public void SetUnifiedRules(IEnumerable<UnifiedRule> rules) { _unifiedRules = rules?.ToList() ?? new(); _flowCache.Clear(); }
+    public void SetFilters(IEnumerable<FilterRule> filters) { _filters = filters?.ToList() ?? new(); _flowCache.Clear(); }
     public void SetProcessPath(int pid, string appPath)
     {
         if (pid > 0 && !string.IsNullOrEmpty(appPath))
@@ -141,7 +166,18 @@ public sealed class WinDivertShaper : IDisposable
         get
         {
             var rules = _unifiedRules;
-            return rules != null && rules.Count > 0 && rules.Any(r => r.IsEnabled);
+            if (rules == null || rules.Count == 0) return false;
+            for (int i = 0; i < rules.Count; i++)
+            {
+                var r = rules[i];
+                if (!r.IsEnabled) continue;
+                if (r.Type == RuleType.Ignore) return true;
+                if (r.Type == RuleType.Quota) return true;
+                if (r.Type == RuleType.Blocker && IsBlockerEnabled) return true;
+                if (r.Type == RuleType.Limit && IsLimiterEnabled) return true;
+                if (r.Type == RuleType.Priority && IsPrioritiesEnabled) return true;
+            }
+            return false;
         }
     }
 
@@ -236,7 +272,7 @@ public sealed class WinDivertShaper : IDisposable
 
             // Initialize WinDivert in ACTIVE diversion mode (WinDivertFlag.None)
             // Intercepts TCP and UDP traffic at Network layer for bidirectional shaping
-            _divert = new WinDivert("tcp or udp", WinDivertLayer.Network, 0, WinDivertFlag.None);
+            _divert = new WinDivert("!loopback and (tcp or udp)", WinDivertLayer.Network, 0, WinDivertFlag.None);
             _divert.QueueLength = 16384;
             _divert.QueueSize = 32 * 1024 * 1024;
             _divert.QueueTime = TimeSpan.FromSeconds(2);
@@ -374,7 +410,7 @@ public sealed class WinDivertShaper : IDisposable
             try
             {
                 _divert?.Dispose();
-                _divert = new WinDivert("tcp or udp", WinDivertLayer.Network, 0, WinDivertFlag.None)
+                _divert = new WinDivert("!loopback and (tcp or udp)", WinDivertLayer.Network, 0, WinDivertFlag.None)
                 {
                     QueueLength = 16384,
                     QueueSize = 32 * 1024 * 1024,
@@ -688,67 +724,27 @@ public sealed class WinDivertShaper : IDisposable
                 ushort srcPort = 0;
                 ushort dstPort = 0;
                 byte protocol = 0;
-                IPAddress? srcIp = null;
-                IPAddress? dstIp = null;
                 bool isIpv6 = false;
 
-                try
+                ReadOnlySpan<byte> span = packet.Span;
+                if (span.Length >= 20)
                 {
-                    unsafe
-                    {
-                        var parse = packet.GetParseResult();
-                        if (parse.IPV4Header != null)
-                        {
-                            protocol = (byte)parse.IPV4Header->Protocol;
-                            srcIp = parse.IPV4Header->SrcAddr;
-                            dstIp = parse.IPV4Header->DstAddr;
-                        }
-                        else if (parse.IPV6Header != null)
-                        {
-                            isIpv6 = true;
-                            protocol = (byte)parse.IPV6Header->NextHdr;
-                            srcIp = parse.IPV6Header->SrcAddr;
-                            dstIp = parse.IPV6Header->DstAddr;
-                        }
-
-                        if (parse.TcpHeader != null)
-                        {
-                            srcPort = parse.TcpHeader->SrcPort;
-                            dstPort = parse.TcpHeader->DstPort;
-                        }
-                        else if (parse.UdpHeader != null)
-                        {
-                            srcPort = parse.UdpHeader->SrcPort;
-                            dstPort = parse.UdpHeader->DstPort;
-                        }
-                    }
-                }
-                catch { }
-
-                // Fallback raw span header parsing
-                if ((srcPort == 0 && dstPort == 0) && recvLen >= 20)
-                {
-                    ReadOnlySpan<byte> span = packet.Span;
                     byte ver = (byte)(span[0] >> 4);
-                    if (ver == 4 && recvLen >= 20)
+                    if (ver == 4)
                     {
                         protocol = span[9];
                         byte ihl = (byte)((span[0] & 0x0F) * 4);
-                        srcIp ??= new IPAddress(span.Slice(12, 4));
-                        dstIp ??= new IPAddress(span.Slice(16, 4));
-                        if ((protocol == 6 || protocol == 17) && recvLen >= ihl + 4)
+                        if ((protocol == 6 || protocol == 17) && span.Length >= ihl + 4)
                         {
                             srcPort = (ushort)((span[ihl] << 8) | span[ihl + 1]);
                             dstPort = (ushort)((span[ihl + 2] << 8) | span[ihl + 3]);
                         }
                     }
-                    else if (ver == 6 && recvLen >= 40)
+                    else if (ver == 6 && span.Length >= 40)
                     {
                         isIpv6 = true;
                         protocol = span[6];
-                        srcIp ??= new IPAddress(span.Slice(8, 16));
-                        dstIp ??= new IPAddress(span.Slice(24, 16));
-                        if ((protocol == 6 || protocol == 17) && recvLen >= 44)
+                        if ((protocol == 6 || protocol == 17) && span.Length >= 44)
                         {
                             srcPort = (ushort)((span[40] << 8) | span[41]);
                             dstPort = (ushort)((span[42] << 8) | span[43]);
@@ -756,13 +752,16 @@ public sealed class WinDivertShaper : IDisposable
                     }
                 }
 
+                if (srcPort == 0 && dstPort == 0)
+                {
+                    divert.Send(packet, addr);
+                    continue;
+                }
+
                 try
                 {
-                    // Direction-aware endpoint resolution: Local endpoint is always local host
                     ushort localPort = isOutbound ? srcPort : dstPort;
                     ushort remotePort = isOutbound ? dstPort : srcPort;
-                    IPAddress? localIp = isOutbound ? srcIp : dstIp;
-                    IPAddress? remoteIp = isOutbound ? dstIp : srcIp;
 
                     // 1. FAST BYPASS: DNS traffic (UDP/TCP port 53) must NEVER be delayed or blocked accidentally!
                     if (localPort == 53 || remotePort == 53)
@@ -771,11 +770,22 @@ public sealed class WinDivertShaper : IDisposable
                         continue;
                     }
 
-                    // 2. FAST BYPASS: Loopback traffic must NEVER be delayed or shaped
-                    if ((srcIp != null && IPAddress.IsLoopback(srcIp)) || (dstIp != null && IPAddress.IsLoopback(dstIp)))
+                    // 2. FAST BYPASS: Loopback check directly from raw bytes (zero allocations)
+                    if (!isIpv6)
                     {
-                        divert.Send(packet, addr);
-                        continue;
+                        if (span[12] == 127 || span[16] == 127)
+                        {
+                            divert.Send(packet, addr);
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if (span[23] == 1 || span[39] == 1)
+                        {
+                            divert.Send(packet, addr);
+                            continue;
+                        }
                     }
 
                     // 3. FAST BYPASS: Outbound TCP Pure ACKs (length <= 64, protocol TCP) must not be throttled on upload
@@ -806,42 +816,102 @@ public sealed class WinDivertShaper : IDisposable
                         _pidLastSeen[pid] = DateTime.UtcNow;
                     }
 
-                    // FAST BYPASS: If no blocking, no priorities, and NO active limits (global or individual) exist,
-                    // and no unified rules exist, send immediately at wire speed with zero overhead.
+                    // FAST BYPASS 1: Entire machine has no active limits, no blocker, and no priorities active
                     if (!IsBlockerEnabled && !IsPrioritiesEnabled && !HasActiveLimits && !HasActiveUnifiedRules)
                     {
                         if (pid > 0)
                         {
-                            if (isOutbound) _bytesOut.AddOrUpdate(pid, (ulong)recvLen, (_, old) => old + (ulong)recvLen);
-                            else _bytesIn.AddOrUpdate(pid, (ulong)recvLen, (_, old) => old + (ulong)recvLen);
+                            if (isOutbound) _bytesOut.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
+                            else _bytesIn.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
                         }
                         divert.Send(packet, addr);
                         continue;
                     }
 
-                    string remoteIpStr = remoteIp?.ToString() ?? "";
-                    string localIpStr = localIp?.ToString() ?? "";
-                    string appPath = "";
-                    if (pid > 0 && _pidToAppPath.TryGetValue(pid, out var cachedPath))
+                    // FAST BYPASS 2: Per-process / per-app bypass when this specific stream has no active limits
+                    if (!IsBlockerEnabled && !IsPrioritiesEnabled && !HasActiveUnifiedRules &&
+                        _globalInBucket == null && _globalOutBucket == null &&
+                        _connInBuckets.IsEmpty && _connOutBuckets.IsEmpty)
                     {
-                        appPath = cachedPath;
+                        bool hasPidLimit = pid > 0 && (isOutbound ? _processOutBuckets.ContainsKey(pid) : _processInBuckets.ContainsKey(pid));
+                        if (!hasPidLimit)
+                        {
+                            string? app = null;
+                            if (pid > 0 && _pidToAppPath.TryGetValue(pid, out var p)) app = p;
+                            bool hasAppLimit = false;
+                            if (!string.IsNullOrEmpty(app))
+                            {
+                                var appBuckets = isOutbound ? _appOutBuckets : _appInBuckets;
+                                if (appBuckets.ContainsKey(app) ||
+                                    appBuckets.ContainsKey(Path.GetFileName(app)) ||
+                                    appBuckets.ContainsKey(Path.GetFileNameWithoutExtension(app)))
+                                {
+                                    hasAppLimit = true;
+                                }
+                            }
+                            if (!hasAppLimit)
+                            {
+                                if (pid > 0)
+                                {
+                                    if (isOutbound) _bytesOut.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
+                                    else _bytesIn.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
+                                }
+                                divert.Send(packet, addr);
+                                continue;
+                            }
+                        }
                     }
-                    string appName = string.IsNullOrEmpty(appPath) ? "" : Path.GetFileName(appPath);
-                    string domain = DnsResolver?.Lookup(remoteIpStr) ?? "";
-                    bool isLocal = IpRangeMatcher.IsPrivate(remoteIpStr) || IpRangeMatcher.IsLoopback(remoteIpStr);
 
-                    // Construct flow context for rule evaluation
-                    var ctx = new ConnectionContext(appName, appPath, localIpStr, localPort, remoteIpStr, remotePort, protocol == 6 ? "TCP" : (protocol == 17 ? "UDP" : protocol.ToString()), domain, "", isLocal)
+                    // Flow rule decision cache: avoids string formatting, IP allocations and rule evaluation on every packet
+                    ulong flowId = ((ulong)protocol << 32) | ((ulong)localPort << 16) | (ulong)remotePort;
+                    RuleEvaluationResult eval;
+                    string appName = "";
+                    string appPath = "";
+                    string localIpStr = "";
+                    string remoteIpStr = "";
+                    bool isLocal = false;
+                    long nowTicks = Stopwatch.GetTimestamp();
+
+                    if (_flowCache.TryGetValue(flowId, out var cachedEntry) &&
+                        (nowTicks - cachedEntry.Timestamp) < (Stopwatch.Frequency * 3))
                     {
-                        Pid = pid,
-                        IsInbound = !isOutbound
-                    };
+                        eval = cachedEntry.Result;
+                        appName = cachedEntry.AppName;
+                        appPath = cachedEntry.AppPath;
+                        localIpStr = cachedEntry.LocalIp;
+                        remoteIpStr = cachedEntry.RemoteIp;
+                        isLocal = cachedEntry.IsLocal;
+                    }
+                    else
+                    {
+                        IPAddress? srcIp = !isIpv6 ? new IPAddress(span.Slice(12, 4)) : new IPAddress(span.Slice(8, 16));
+                        IPAddress? dstIp = !isIpv6 ? new IPAddress(span.Slice(16, 4)) : new IPAddress(span.Slice(24, 16));
+                        IPAddress? localIp = isOutbound ? srcIp : dstIp;
+                        IPAddress? remoteIp = isOutbound ? dstIp : srcIp;
+                        remoteIpStr = remoteIp?.ToString() ?? "";
+                        localIpStr = localIp?.ToString() ?? "";
+                        if (pid > 0 && _pidToAppPath.TryGetValue(pid, out var cachedPath))
+                        {
+                            appPath = cachedPath;
+                        }
+                        appName = string.IsNullOrEmpty(appPath) ? "" : Path.GetFileName(appPath);
+                        string domain = DnsResolver?.Lookup(remoteIpStr) ?? "";
+                        isLocal = IpRangeMatcher.IsPrivate(remoteIpStr) || IpRangeMatcher.IsLoopback(remoteIpStr);
 
-                    // Evaluate Unified Rule precedence pipeline (Ignore > Blocker > Quota/Limit/Priority)
-                    var eval = RuleEvaluator.Evaluate(_unifiedRules, ctx, _filters);
+                        var ctx = new ConnectionContext(appName, appPath, localIpStr, localPort, remoteIpStr, remotePort,
+                            protocol == 6 ? "TCP" : (protocol == 17 ? "UDP" : protocol.ToString()), domain, "", isLocal)
+                        {
+                            Pid = pid,
+                            IsInbound = !isOutbound
+                        };
+
+                        eval = RuleEvaluator.Evaluate(_unifiedRules, ctx, _filters);
+
+                        if (_flowCache.Count > 10000) _flowCache.Clear();
+                        _flowCache[flowId] = new FlowCacheEntry(eval, appName, appPath, localIpStr, remoteIpStr, isLocal, nowTicks);
+                    }
 
                     // PRECEDENCE TIER 1: IGNORE RULES (Item 4.03)
-                    // "Ignore data" -> wire-speed bypass without counting stats (VPN double-counting solution)
                     if (eval.IsBypassed && !eval.CountInStats)
                     {
                         divert.Send(packet, addr);
@@ -851,18 +921,11 @@ public sealed class WinDivertShaper : IDisposable
                     // Record process telemetry (only when not bypassed by IgnoreData)
                     if (pid > 0)
                     {
-                        if (isOutbound)
-                        {
-                            _bytesOut.AddOrUpdate(pid, (ulong)recvLen, (_, old) => old + (ulong)recvLen);
-                        }
-                        else
-                        {
-                            _bytesIn.AddOrUpdate(pid, (ulong)recvLen, (_, old) => old + (ulong)recvLen);
-                        }
+                        if (isOutbound) _bytesOut.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
+                        else _bytesIn.AddOrUpdate(pid, AddLenFactory, UpdateLenFactory, (ulong)recvLen);
                     }
 
-                    // FAST BYPASS: If no blocking, no priorities, and NO active limits (global or individual) exist,
-                    // and no unified rules exist, send immediately at wire speed with zero overhead.
+                    // FAST BYPASS: If no blocking, no priorities, and NO active limits exist, send immediately
                     if (!IsBlockerEnabled && !IsPrioritiesEnabled && !HasActiveLimits && !HasActiveUnifiedRules)
                     {
                         divert.Send(packet, addr);
@@ -962,9 +1025,9 @@ public sealed class WinDivertShaper : IDisposable
                         continue;
                     }
 
-                    // Construct 5-tuple connection key
-                    string connKey = (localIp != null && remoteIp != null)
-                        ? "$" + (isIpv6 ? "6" : "4") + "|$localIp:$localPort|$remoteIp:$remotePort"
+                    // Construct 5-tuple connection key only if connection limits/priorities exist
+                    string connKey = (!_connPriorities.IsEmpty || !_connInBuckets.IsEmpty || !_connOutBuckets.IsEmpty)
+                        ? $"{(isIpv6 ? "6" : "4")}|{localPort}|{remotePort}"
                         : "";
 
                     // Evaluate Rate Limits & Priority
@@ -1064,7 +1127,7 @@ public sealed class WinDivertShaper : IDisposable
         // Level 1: Application limit (by executable name, extension variants, or full path)
         var appBuckets = isOutbound ? _appOutBuckets : _appInBuckets;
         TokenBucket? aBucket = null;
-        if (!string.IsNullOrEmpty(appName))
+        if (!appBuckets.IsEmpty && !string.IsNullOrEmpty(appName))
         {
             if (appBuckets.TryGetValue(appName, out aBucket))
             {

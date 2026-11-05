@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 
 namespace Valve.Core;
@@ -41,6 +41,7 @@ public sealed class DnsResolver : IDisposable
     public void Enqueue(string ip)
     {
         if (string.IsNullOrWhiteSpace(ip) || _disposed) return;
+        if (_pending.Count >= 300) return;
         if (GeoIp.IsPrivate(ip)) return;
         if (_cache.ContainsKey(ip)) return;
 

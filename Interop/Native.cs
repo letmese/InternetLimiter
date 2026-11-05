@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Valve.Interop;
 
@@ -188,6 +188,31 @@ internal static class Native
 
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool CloseHandle(IntPtr handle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetExitCodeProcess(IntPtr hProcess, out uint lpExitCode);
+
+    public const uint STILL_ACTIVE = 259;
+
+    public static bool IsProcessAlive(int pid)
+    {
+        if (pid <= 0) return false;
+        IntPtr h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, (uint)pid);
+        if (h == IntPtr.Zero) return false;
+        try
+        {
+            if (GetExitCodeProcess(h, out uint code))
+            {
+                return code == STILL_ACTIVE;
+            }
+            return false;
+        }
+        finally
+        {
+            CloseHandle(h);
+        }
+    }
 
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool AttachConsole(int dwProcessId);

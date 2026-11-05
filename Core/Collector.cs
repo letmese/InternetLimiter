@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using Valve.Interop;
@@ -531,19 +531,19 @@ public sealed class Collector : IDisposable
 
     private static unsafe bool TryReadPath(byte* row, bool ipv6, out uint rttMs, out ulong retransBytes)
     {
-        int size = Marshal.SizeOf<Native.TCP_ESTATS_PATH_ROD_v0>();
-        IntPtr rodPtr = Marshal.AllocHGlobal(size);
+        Native.TCP_ESTATS_PATH_ROD_v0 rod = default;
+        int size = sizeof(Native.TCP_ESTATS_PATH_ROD_v0);
         try
         {
             uint rc = ipv6
                 ? Native.GetPerTcp6ConnectionEStats(
                     (IntPtr)row, Native.TCP_ESTATS_PATH,
                     IntPtr.Zero, 0, 0, IntPtr.Zero, 0, 0,
-                    rodPtr, 0, (uint)size)
+                    (IntPtr)(&rod), 0, (uint)size)
                 : Native.GetPerTcpConnectionEStats(
                     (IntPtr)row, Native.TCP_ESTATS_PATH,
                     IntPtr.Zero, 0, 0, IntPtr.Zero, 0, 0,
-                    rodPtr, 0, (uint)size);
+                    (IntPtr)(&rod), 0, (uint)size);
 
             if (rc != 0)
             {
@@ -552,7 +552,6 @@ public sealed class Collector : IDisposable
                 return false;
             }
 
-            var rod = Marshal.PtrToStructure<Native.TCP_ESTATS_PATH_ROD_v0>(rodPtr);
             rttMs = rod.SmoothedRtt > 1000 ? rod.SmoothedRtt / 1000 : rod.SmoothedRtt;
             retransBytes = rod.BytesRetrans;
             return true;
@@ -563,45 +562,33 @@ public sealed class Collector : IDisposable
             retransBytes = 0;
             return false;
         }
-        finally
-        {
-            Marshal.FreeHGlobal(rodPtr);
-        }
     }
 
     private static unsafe bool TryRead(byte* row, bool ipv6, out ulong bytesIn, out ulong bytesOut)
     {
-        int size = Marshal.SizeOf<Native.TCP_ESTATS_DATA_ROD_v0>();
-        IntPtr rodPtr = Marshal.AllocHGlobal(size);
-        try
-        {
-            uint rc = ipv6
-                ? Native.GetPerTcp6ConnectionEStats(
-                    (IntPtr)row, Native.TCP_ESTATS_DATA,
-                    IntPtr.Zero, 0, 0, IntPtr.Zero, 0, 0,
-                    rodPtr, 0, (uint)size)
-                : Native.GetPerTcpConnectionEStats(
-                    (IntPtr)row, Native.TCP_ESTATS_DATA,
-                    IntPtr.Zero, 0, 0, IntPtr.Zero, 0, 0,
-                    rodPtr, 0, (uint)size);
+        Native.TCP_ESTATS_DATA_ROD_v0 rod = default;
+        int size = sizeof(Native.TCP_ESTATS_DATA_ROD_v0);
+        uint rc = ipv6
+            ? Native.GetPerTcp6ConnectionEStats(
+                (IntPtr)row, Native.TCP_ESTATS_DATA,
+                IntPtr.Zero, 0, 0, IntPtr.Zero, 0, 0,
+                (IntPtr)(&rod), 0, (uint)size)
+            : Native.GetPerTcpConnectionEStats(
+                (IntPtr)row, Native.TCP_ESTATS_DATA,
+                IntPtr.Zero, 0, 0, IntPtr.Zero, 0, 0,
+                (IntPtr)(&rod), 0, (uint)size);
 
-            if (rc != 0)
-            {
-                LastEstatsError = rc;
-                bytesIn = 0;
-                bytesOut = 0;
-                return false;
-            }
-
-            var rod = Marshal.PtrToStructure<Native.TCP_ESTATS_DATA_ROD_v0>(rodPtr);
-            bytesIn = rod.DataBytesIn;
-            bytesOut = rod.DataBytesOut;
-            return true;
-        }
-        finally
+        if (rc != 0)
         {
-            Marshal.FreeHGlobal(rodPtr);
+            LastEstatsError = rc;
+            bytesIn = 0;
+            bytesOut = 0;
+            return false;
         }
+
+        bytesIn = rod.DataBytesIn;
+        bytesOut = rod.DataBytesOut;
+        return true;
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -117,8 +117,8 @@ public sealed class WinDivertShaper : IDisposable
     private static readonly Func<int, ulong, ulong> AddLenFactory = static (_, len) => len;
     private static readonly Func<int, ulong, ulong, ulong> UpdateLenFactory = static (_, old, len) => old + len;
 
-    public void SetUnifiedRules(IEnumerable<UnifiedRule> rules) { _unifiedRules = rules?.ToList() ?? new(); _flowCache.Clear(); }
-    public void SetFilters(IEnumerable<FilterRule> filters) { _filters = filters?.ToList() ?? new(); _flowCache.Clear(); }
+    public void SetUnifiedRules(IEnumerable<UnifiedRule> rules) { _unifiedRules = rules?.ToList() ?? new(); _flowCache.Clear(); UpdateEngineState(); }
+    public void SetFilters(IEnumerable<FilterRule> filters) { _filters = filters?.ToList() ?? new(); _flowCache.Clear(); UpdateEngineState(); }
     public void SetProcessPath(int pid, string appPath)
     {
         if (pid > 0 && !string.IsNullOrEmpty(appPath))
@@ -139,7 +139,17 @@ public sealed class WinDivertShaper : IDisposable
     private long _nextHeldPacketId;
     private volatile string _defaultBlockerAction = "Allow";
 
-    public volatile bool IsBlockerEnabled = false;
+    private volatile bool _isBlockerEnabled = false;
+    public bool IsBlockerEnabled
+    {
+        get => _isBlockerEnabled;
+        set
+        {
+            _isBlockerEnabled = value;
+            UpdateEngineState();
+        }
+    }
+
     public string DefaultBlockerAction
     {
         get => _defaultBlockerAction;
@@ -150,8 +160,31 @@ public sealed class WinDivertShaper : IDisposable
     public int HeldPacketsCount => _heldPackets.Count;
 
     // Master toggles
-    public volatile bool IsLimiterEnabled = false;
-    public volatile bool IsPrioritiesEnabled = false;
+    private volatile bool _isLimiterEnabled = false;
+    public bool IsLimiterEnabled
+    {
+        get => _isLimiterEnabled;
+        set
+        {
+            _isLimiterEnabled = value;
+            UpdateEngineState();
+        }
+    }
+
+    private volatile bool _isPrioritiesEnabled = false;
+    public bool IsPrioritiesEnabled
+    {
+        get => _isPrioritiesEnabled;
+        set
+        {
+            _isPrioritiesEnabled = value;
+            UpdateEngineState();
+        }
+    }
+
+    public bool HasActivePriorities =>
+        !_processPriorities.IsEmpty || !_appPriorities.IsEmpty ||
+        !_connPriorities.IsEmpty || !_filterPriorities.IsEmpty;
 
     public bool HasActiveIndividualLimits =>
         !_appInBuckets.IsEmpty || !_appOutBuckets.IsEmpty ||
@@ -180,6 +213,16 @@ public sealed class WinDivertShaper : IDisposable
             return false;
         }
     }
+
+    public bool NeedsPacketInterception =>
+        (IsLimiterEnabled && (_globalInBucket != null || _globalOutBucket != null || HasActiveIndividualLimits)) ||
+        HasActiveIndividualLimits ||
+        IsBlockerEnabled ||
+        (IsPrioritiesEnabled && HasActivePriorities) ||
+        HasActiveUnifiedRules;
+
+    private readonly object _engineLock = new();
+    public bool IsEngineActive => _workerThread != null && !_stopping && !_disposed;
 
     // Line speeds & reservation percentages (Section 2)
     private long _downloadLineSpeedBps = 12500000; // 100 Mbps default
@@ -246,8 +289,47 @@ public sealed class WinDivertShaper : IDisposable
             UnavailableReason = "disposed";
             return;
         }
-        if (_workerThread != null) return;
 
+        if (!_driverFilesPresent.Value)
+        {
+            _available = false;
+            UnavailableReason = "driver files missing";
+            return;
+        }
+
+        _available = true;
+        UnavailableReason = "none";
+
+        // Initial port mapping from OS TCP/UDP tables
+        RefreshPortMap();
+
+        // Refresh OS port-to-PID lookup every 1000ms
+        _portRefreshTimer ??= new System.Threading.Timer(_ => RefreshPortMap(), null, 1000, 1000);
+
+        UpdateEngineState();
+    }
+
+    private void UpdateEngineState()
+    {
+        if (_disposed) return;
+        lock (_engineLock)
+        {
+            if (_disposed) return;
+            bool needed = NeedsPacketInterception;
+            if (needed && _workerThread == null)
+            {
+                StartWorkers();
+            }
+            else if (!needed && _workerThread != null)
+            {
+                StopWorkers();
+            }
+        }
+    }
+
+    private void StartWorkers()
+    {
+        if (_disposed || _workerThread != null) return;
         if (!_driverFilesPresent.Value)
         {
             _available = false;
@@ -257,31 +339,30 @@ public sealed class WinDivertShaper : IDisposable
 
         try
         {
-            // Initial port mapping from OS TCP/UDP tables
-            RefreshPortMap();
-
-            // Set OS timer resolution to 1ms for sub-millisecond pacing precision
-            try
+            if (!_timerPeriodActive)
             {
-                if (Native.TimeBeginPeriod(1) == 0)
+                try
                 {
-                    _timerPeriodActive = true;
+                    if (Native.TimeBeginPeriod(1) == 0)
+                    {
+                        _timerPeriodActive = true;
+                    }
                 }
+                catch { }
             }
-            catch { }
 
-            // Initialize WinDivert in ACTIVE diversion mode (WinDivertFlag.None)
-            // Intercepts TCP and UDP traffic at Network layer for bidirectional shaping
-            _divert = new WinDivert("!loopback and (tcp or udp)", WinDivertLayer.Network, 0, WinDivertFlag.None);
-            _divert.QueueLength = 16384;
-            _divert.QueueSize = 32 * 1024 * 1024;
-            _divert.QueueTime = TimeSpan.FromSeconds(2);
+            _divert = new WinDivert("!loopback and (tcp or udp)", WinDivertLayer.Network, 0, WinDivertFlag.None)
+            {
+                QueueLength = 16384,
+                QueueSize = 32 * 1024 * 1024,
+                QueueTime = TimeSpan.FromSeconds(2)
+            };
 
             _stopping = false;
             _available = true;
             UnavailableReason = "none";
+            LastPacketUtc = DateTime.UtcNow;
 
-            // Worker loop receives packets and either forwards immediately or enqueues for pacing
             _workerThread = new Thread(WorkerLoop)
             {
                 IsBackground = true,
@@ -290,7 +371,6 @@ public sealed class WinDivertShaper : IDisposable
             };
             _workerThread.Start();
 
-            // Pacer thread releases delayed packets with sub-millisecond precision
             _pacerThread = new Thread(PacerLoop)
             {
                 IsBackground = true,
@@ -299,8 +379,7 @@ public sealed class WinDivertShaper : IDisposable
             };
             _pacerThread.Start();
 
-            // Refresh OS port-to-PID lookup every 1000ms
-            _portRefreshTimer = new System.Threading.Timer(_ => RefreshPortMap(), null, 0, 1000);
+            EventLogBridge.Info("WinDivert interception engine started on demand.");
         }
         catch (Exception ex)
         {
@@ -308,6 +387,53 @@ public sealed class WinDivertShaper : IDisposable
             _available = false;
             UnavailableReason = $"handle open failed: {ex.Message}";
         }
+    }
+
+    private void StopWorkers()
+    {
+        _stopping = true;
+        try { _divert?.Dispose(); } catch { }
+        _divert = null;
+
+        _pacingSignal.Set();
+
+        try
+        {
+            if (_workerThread != null && _workerThread.IsAlive)
+            {
+                _workerThread.Join(300);
+            }
+        }
+        catch { }
+        _workerThread = null;
+
+        try
+        {
+            if (_pacerThread != null && _pacerThread.IsAlive)
+            {
+                _pacerThread.Join(300);
+            }
+        }
+        catch { }
+        _pacerThread = null;
+
+        lock (_pacingLock)
+        {
+            while (_pacingQueue.Count > 0)
+            {
+                var p = _pacingQueue.Dequeue();
+                if (_packetPool.Count < MaxPoolSize) _packetPool.Add(p);
+            }
+        }
+
+        if (_timerPeriodActive)
+        {
+            try { Native.TimeEndPeriod(1); } catch { }
+            _timerPeriodActive = false;
+        }
+
+        _stopping = false;
+        EventLogBridge.Info("WinDivert interception engine stopped (standby mode, 0% CPU).");
     }
 
     public void RefreshPortMap()
@@ -404,7 +530,7 @@ public sealed class WinDivertShaper : IDisposable
     private int _reopenAttempts = 0;
     private void TryReopenWorker()
     {
-        if (_stopping || _disposed) return;
+        if (_stopping || _disposed || !NeedsPacketInterception) return;
         if (Interlocked.Increment(ref _reopenAttempts) <= 3)
         {
             try
@@ -468,6 +594,7 @@ public sealed class WinDivertShaper : IDisposable
         {
             if (isDownload) _globalInBucket = null;
             else _globalOutBucket = null;
+            UpdateEngineState();
             return;
         }
 
@@ -482,12 +609,14 @@ public sealed class WinDivertShaper : IDisposable
             if (_globalOutBucket == null) _globalOutBucket = new TokenBucket(bytesPerSec);
             else _globalOutBucket.SetRate(bytesPerSec);
         }
+        UpdateEngineState();
     }
 
     public void ClearGlobalLimit()
     {
         _globalInBucket = null;
         _globalOutBucket = null;
+        UpdateEngineState();
     }
 
     public void SetDownloadLimit(int pid, int limitKbps) => SetProcessLimit(pid, limitKbps, isDownload: true, enabled: limitKbps > 0);
@@ -509,6 +638,7 @@ public sealed class WinDivertShaper : IDisposable
                 _processUlLimits.TryRemove(pid, out _);
                 _processOutBuckets.TryRemove(pid, out _);
             }
+            UpdateEngineState();
             return;
         }
 
@@ -523,6 +653,7 @@ public sealed class WinDivertShaper : IDisposable
             _processUlLimits[pid] = limitKbps;
             _processOutBuckets.AddOrUpdate(pid, _ => new TokenBucket(bytesPerSec), (_, b) => { b.SetRate(bytesPerSec); return b; });
         }
+        UpdateEngineState();
     }
 
     public void ClearProcessLimit(int pid)
@@ -531,6 +662,7 @@ public sealed class WinDivertShaper : IDisposable
         _processUlLimits.TryRemove(pid, out _);
         _processInBuckets.TryRemove(pid, out _);
         _processOutBuckets.TryRemove(pid, out _);
+        UpdateEngineState();
     }
 
     public void SetAppLimit(string exeOrPath, int limitKbps, bool isDownload = true, bool enabled = true)
@@ -540,6 +672,7 @@ public sealed class WinDivertShaper : IDisposable
         {
             if (isDownload) { _appDlLimits.TryRemove(key, out _); _appInBuckets.TryRemove(key, out _); }
             else { _appUlLimits.TryRemove(key, out _); _appOutBuckets.TryRemove(key, out _); }
+            UpdateEngineState();
             return;
         }
 
@@ -554,6 +687,7 @@ public sealed class WinDivertShaper : IDisposable
             _appUlLimits[key] = limitKbps;
             _appOutBuckets.AddOrUpdate(key, _ => new TokenBucket(bytesPerSec), (_, b) => { b.SetRate(bytesPerSec); return b; });
         }
+        UpdateEngineState();
     }
 
     public void ClearAppLimit(string exeOrPath)
@@ -563,6 +697,7 @@ public sealed class WinDivertShaper : IDisposable
         _appUlLimits.TryRemove(key, out _);
         _appInBuckets.TryRemove(key, out _);
         _appOutBuckets.TryRemove(key, out _);
+        UpdateEngineState();
     }
 
     public void ClearAllAppLimits()
@@ -572,6 +707,7 @@ public sealed class WinDivertShaper : IDisposable
         _appInBuckets.Clear();
         _appOutBuckets.Clear();
         _appPriorities.Clear();
+        UpdateEngineState();
     }
 
     public void SetConnectionLimit(string connectionKey, int limitKbps, bool isDownload = true, bool enabled = true)
@@ -580,6 +716,7 @@ public sealed class WinDivertShaper : IDisposable
         {
             if (isDownload) { _connDlLimits.TryRemove(connectionKey, out _); _connInBuckets.TryRemove(connectionKey, out _); }
             else { _connUlLimits.TryRemove(connectionKey, out _); _connOutBuckets.TryRemove(connectionKey, out _); }
+            UpdateEngineState();
             return;
         }
 
@@ -594,6 +731,7 @@ public sealed class WinDivertShaper : IDisposable
             _connUlLimits[connectionKey] = limitKbps;
             _connOutBuckets.AddOrUpdate(connectionKey, _ => new TokenBucket(bytesPerSec), (_, b) => { b.SetRate(bytesPerSec); return b; });
         }
+        UpdateEngineState();
     }
 
     public void ClearConnectionLimit(string connectionKey)
@@ -602,6 +740,7 @@ public sealed class WinDivertShaper : IDisposable
         _connUlLimits.TryRemove(connectionKey, out _);
         _connInBuckets.TryRemove(connectionKey, out _);
         _connOutBuckets.TryRemove(connectionKey, out _);
+        UpdateEngineState();
     }
 
     public void SetFilterLimit(string filterName, int limitKbps, bool isDownload = true, bool enabled = true)
@@ -610,6 +749,7 @@ public sealed class WinDivertShaper : IDisposable
         {
             if (isDownload) { _filterDlLimits.TryRemove(filterName, out _); _filterInBuckets.TryRemove(filterName, out _); }
             else { _filterUlLimits.TryRemove(filterName, out _); _filterOutBuckets.TryRemove(filterName, out _); }
+            UpdateEngineState();
             return;
         }
 
@@ -624,6 +764,7 @@ public sealed class WinDivertShaper : IDisposable
             _filterUlLimits[filterName] = limitKbps;
             _filterOutBuckets.AddOrUpdate(filterName, _ => new TokenBucket(bytesPerSec), (_, b) => { b.SetRate(bytesPerSec); return b; });
         }
+        UpdateEngineState();
     }
 
     public void ClearFilterLimit(string filterName)
@@ -632,12 +773,37 @@ public sealed class WinDivertShaper : IDisposable
         _filterUlLimits.TryRemove(filterName, out _);
         _filterInBuckets.TryRemove(filterName, out _);
         _filterOutBuckets.TryRemove(filterName, out _);
+        UpdateEngineState();
     }
 
-    public void SetProcessPriority(int pid, TrafficPriority priority) => _processPriorities[pid] = priority;
-    public void SetAppPriority(string exeOrPath, TrafficPriority priority) => _appPriorities[Path.GetFileName(exeOrPath).ToLowerInvariant()] = priority;
-    public void SetConnectionPriority(string connectionKey, TrafficPriority priority) => _connPriorities[connectionKey] = priority;
-    public void SetFilterPriority(string filterName, TrafficPriority priority) => _filterPriorities[filterName] = priority;
+    public void SetProcessPriority(int pid, TrafficPriority priority)
+    {
+        if (priority == TrafficPriority.Normal) _processPriorities.TryRemove(pid, out _);
+        else _processPriorities[pid] = priority;
+        UpdateEngineState();
+    }
+
+    public void SetAppPriority(string exeOrPath, TrafficPriority priority)
+    {
+        string k = Path.GetFileName(exeOrPath).ToLowerInvariant();
+        if (priority == TrafficPriority.Normal) _appPriorities.TryRemove(k, out _);
+        else _appPriorities[k] = priority;
+        UpdateEngineState();
+    }
+
+    public void SetConnectionPriority(string connectionKey, TrafficPriority priority)
+    {
+        if (priority == TrafficPriority.Normal) _connPriorities.TryRemove(connectionKey, out _);
+        else _connPriorities[connectionKey] = priority;
+        UpdateEngineState();
+    }
+
+    public void SetFilterPriority(string filterName, TrafficPriority priority)
+    {
+        if (priority == TrafficPriority.Normal) _filterPriorities.TryRemove(filterName, out _);
+        else _filterPriorities[filterName] = priority;
+        UpdateEngineState();
+    }
 
     public void SetLineSpeed(long downloadBps, long uploadBps)
     {
@@ -1612,42 +1778,13 @@ public sealed class WinDivertShaper : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        _stopping = true;
         UnavailableReason = "stopped";
 
         try { _heldPackets.Clear(); } catch { }
         try { _heldDecisions.Clear(); } catch { }
-
         try { _portRefreshTimer?.Dispose(); } catch { }
 
-        // Disposing divert handle immediately unblocks any pending Recv call
-        try { _divert?.Dispose(); } catch { }
-
-        _pacingSignal.Set();
-
-        try
-        {
-            if (_workerThread != null && _workerThread.IsAlive)
-            {
-                _workerThread.Join(500);
-            }
-        }
-        catch { }
-
-        try
-        {
-            if (_pacerThread != null && _pacerThread.IsAlive)
-            {
-                _pacerThread.Join(500);
-            }
-        }
-        catch { }
-
-        if (_timerPeriodActive)
-        {
-            try { Native.TimeEndPeriod(1); } catch { }
-            _timerPeriodActive = false;
-        }
+        StopWorkers();
 
         _pacingSignal.Dispose();
     }

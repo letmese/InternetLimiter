@@ -1,9 +1,9 @@
 {
-  "TimestampUtc": "2026-11-05T03:27:56.6889936Z",
+  "TimestampUtc": "2026-11-05T04:14:54.2311058Z",
   "TotalTests": 83,
   "Passed": 83,
   "Failed": 0,
-  "DurationMs": 3046,
+  "DurationMs": 3944,
   "Success": true,
   "Results": [
     {
@@ -12,7 +12,7 @@
       "Tier": 1,
       "Description": "Verifies ProcessRow LimitKbps and DownloadLimitKbps properties and formatted text",
       "Passed": true,
-      "DurationMs": 1,
+      "DurationMs": 2,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -22,7 +22,7 @@
       "Tier": 1,
       "Description": "Verifies TokenBucket rate limiter enforces rate cap and allows linear token replenish",
       "Passed": true,
-      "DurationMs": 130,
+      "DurationMs": 135,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -32,7 +32,7 @@
       "Tier": 1,
       "Description": "Verifies WinDivertShaper SetDownloadLimit and ClearDownloadLimit state transitions",
       "Passed": true,
-      "DurationMs": 26,
+      "DurationMs": 113,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -52,7 +52,7 @@
       "Tier": 1,
       "Description": "Verifies BlockerState cycle: NotSet -\u003E Deny -\u003E Allow -\u003E Ask -\u003E NotSet",
       "Passed": true,
-      "DurationMs": 0,
+      "DurationMs": 1,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -62,7 +62,7 @@
       "Tier": 1,
       "Description": "Verifies FirewallRule initialization, default properties and 32-char GUID",
       "Passed": true,
-      "DurationMs": 1,
+      "DurationMs": 0,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -72,7 +72,7 @@
       "Tier": 1,
       "Description": "Verifies WfpFirewall engine instantiates safely reporting availability",
       "Passed": true,
-      "DurationMs": 6,
+      "DurationMs": 13,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -82,7 +82,7 @@
       "Tier": 1,
       "Description": "Verifies non-elevated user permissions allow monitoring but block mutations with permission message",
       "Passed": true,
-      "DurationMs": 4,
+      "DurationMs": 12,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -92,7 +92,7 @@
       "Tier": 1,
       "Description": "Verifies HostSlot captures parent slot and re-hosts elements cleanly for StackPanel and TabControl (B1)",
       "Passed": true,
-      "DurationMs": 514,
+      "DurationMs": 819,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -102,7 +102,7 @@
       "Tier": 1,
       "Description": "Verifies dockable tool window layout model persistence, serialization, and round-trip recovery (Item 22.x)",
       "Passed": true,
-      "DurationMs": 128,
+      "DurationMs": 180,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -112,7 +112,7 @@
       "Tier": 1,
       "Description": "Verifies FilterRule matches application path substring",
       "Passed": true,
-      "DurationMs": 4,
+      "DurationMs": 7,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -122,7 +122,7 @@
       "Tier": 1,
       "Description": "Verifies FilterRule matches domain name with wildcards",
       "Passed": true,
-      "DurationMs": 20,
+      "DurationMs": 31,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -132,7 +132,7 @@
       "Tier": 1,
       "Description": "Verifies FilterRule matches IP range subnet prefix",
       "Passed": true,
-      "DurationMs": 3,
+      "DurationMs": 4,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -182,7 +182,7 @@
       "Tier": 1,
       "Description": "Verifies process with connections records via connection path only and process without connections records via compensating path, preventing double-counting (B2)",
       "Passed": true,
-      "DurationMs": 109,
+      "DurationMs": 133,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -192,7 +192,7 @@
       "Tier": 1,
       "Description": "Verifies AtomicStorage creates .bak file on subsequent overwrites",
       "Passed": true,
-      "DurationMs": 23,
+      "DurationMs": 38,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -202,7 +202,7 @@
       "Tier": 1,
       "Description": "Verifies AtomicStorage saves and loads data with byte integrity",
       "Passed": true,
-      "DurationMs": 11,
+      "DurationMs": 15,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -212,7 +212,7 @@
       "Tier": 1,
       "Description": "Verifies SettingsStore round-trip saves and loads AppRule, ScheduleRule, and FilterRule",
       "Passed": true,
-      "DurationMs": 254,
+      "DurationMs": 287,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -222,7 +222,7 @@
       "Tier": 1,
       "Description": "Verifies zero orphan Click event handlers across all *.xaml.cs files in the project (Batch B4)",
       "Passed": true,
-      "DurationMs": 45,
+      "DurationMs": 85,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -232,7 +232,7 @@
       "Tier": 1,
       "Description": "Audits FEATURE_LEDGER.md verifying 0 beyond-EOF citations, legitimate row statuses, and 311 arithmetic (Batch B3)",
       "Passed": true,
-      "DurationMs": 386,
+      "DurationMs": 551,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -242,7 +242,7 @@
       "Tier": 1,
       "Description": "Verifies true kernel/WinDivert packet holding and release on Ask blocker action (Items 3.02, 3.03, 3.04)",
       "Passed": true,
-      "DurationMs": 8,
+      "DurationMs": 10,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -252,7 +252,7 @@
       "Tier": 1,
       "Description": "Verifies NetLimiter compatibility directory loading and atomic persistence (Item 26.04)",
       "Passed": true,
-      "DurationMs": 14,
+      "DurationMs": 17,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -262,7 +262,7 @@
       "Tier": 1,
       "Description": "Verifies asynchronous concurrent batched writes offload UI thread and persist all records upon FlushSync (Batch B2)",
       "Passed": true,
-      "DurationMs": 45,
+      "DurationMs": 46,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -272,7 +272,7 @@
       "Tier": 1,
       "Description": "Verifies SQLite3 persistent long-term traffic statistics database storage and query (Item 13.01)",
       "Passed": true,
-      "DurationMs": 23,
+      "DurationMs": 27,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -282,7 +282,7 @@
       "Tier": 1,
       "Description": "Verifies local Named Pipe Client-Service IPC command exchange (Items 1.14, 28.01, 28.02)",
       "Passed": true,
-      "DurationMs": 140,
+      "DurationMs": 113,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -292,7 +292,7 @@
       "Tier": 1,
       "Description": "Verifies Windows user accounts/groups ACL permissions for Monitor, Control, and Remote Connect (Items 16.01-16.03)",
       "Passed": true,
-      "DurationMs": 8,
+      "DurationMs": 7,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -402,7 +402,7 @@
       "Tier": 1,
       "Description": "Verifies ProcessRow updates throughput, formats totals, and resets correctly",
       "Passed": true,
-      "DurationMs": 2,
+      "DurationMs": 1,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -412,7 +412,7 @@
       "Tier": 1,
       "Description": "Verifies connection rates are NOT zeroed out when process engine rate is 0",
       "Passed": true,
-      "DurationMs": 5,
+      "DurationMs": 3,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -422,7 +422,7 @@
       "Tier": 1,
       "Description": "Verifies Normal and Critical priorities have zero pacing delay overhead",
       "Passed": true,
-      "DurationMs": 10,
+      "DurationMs": 1,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -432,7 +432,7 @@
       "Tier": 1,
       "Description": "Verifies SET_APP_LIMIT accepts JSON payloads and correctly parses Windows paths with colons (B3)",
       "Passed": true,
-      "DurationMs": 147,
+      "DurationMs": 163,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -442,7 +442,7 @@
       "Tier": 1,
       "Description": "Verifies SYNC_RULES applies per-app limits, priorities, and blocker state (B3)",
       "Passed": true,
-      "DurationMs": 186,
+      "DurationMs": 199,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -482,7 +482,7 @@
       "Tier": 2,
       "Description": "Stress-tests DnsResolver with invalid IPs, loopback, private IPs, and malformed strings",
       "Passed": true,
-      "DurationMs": 1,
+      "DurationMs": 2,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -492,7 +492,7 @@
       "Tier": 2,
       "Description": "Stress-tests DnsResolver under high-concurrency rapid enqueue and lookup bursts",
       "Passed": true,
-      "DurationMs": 10,
+      "DurationMs": 11,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -502,7 +502,7 @@
       "Tier": 2,
       "Description": "Stress-tests ProcessRow graph history capacity (180 samples) and Fmt rate scaling",
       "Passed": true,
-      "DurationMs": 1,
+      "DurationMs": 2,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -512,7 +512,7 @@
       "Tier": 2,
       "Description": "Stress-tests ServiceResolver with negative PIDs, PID 0, PID 4, and non-existent PIDs",
       "Passed": true,
-      "DurationMs": 7,
+      "DurationMs": 9,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -522,7 +522,7 @@
       "Tier": 2,
       "Description": "Stress-tests ServiceResolver with rapid concurrent queries across multiple threads",
       "Passed": true,
-      "DurationMs": 3,
+      "DurationMs": 6,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -532,7 +532,7 @@
       "Tier": 2,
       "Description": "Stress-tests TrafficGraph under extreme 10 Gbps bandwidth rates and zero rates on STA thread",
       "Passed": true,
-      "DurationMs": 4,
+      "DurationMs": 5,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -542,7 +542,7 @@
       "Tier": 2,
       "Description": "Stress-tests TrafficGraph sample edge cases: empty list, single sample, and massive history",
       "Passed": true,
-      "DurationMs": 4,
+      "DurationMs": 6,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -642,7 +642,7 @@
       "Tier": 2,
       "Description": "Verifies TokenBucket handles extreme high throughput (10 Gbps) without integer overflow",
       "Passed": true,
-      "DurationMs": 26,
+      "DurationMs": 27,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -662,7 +662,7 @@
       "Tier": 2,
       "Description": "Verifies TokenBucket enforces minimum safety floor of 1024 B/s",
       "Passed": true,
-      "DurationMs": 0,
+      "DurationMs": 1,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -672,7 +672,7 @@
       "Tier": 2,
       "Description": "Verifies AtomicStorage.IsValidPayload rejects null bytes and malformed JSON",
       "Passed": true,
-      "DurationMs": 1,
+      "DurationMs": 4,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -682,7 +682,7 @@
       "Tier": 2,
       "Description": "Verifies repeated crashes after auto-heal still successfully recover from .bak",
       "Passed": true,
-      "DurationMs": 65,
+      "DurationMs": 115,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -692,7 +692,7 @@
       "Tier": 2,
       "Description": "Verifies AtomicStorage automatically heals and recovers from .bak when primary file is null-padded",
       "Passed": true,
-      "DurationMs": 17,
+      "DurationMs": 30,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -702,7 +702,7 @@
       "Tier": 2,
       "Description": "Verifies AtomicStorage detects truncated JSON lacking closing brace and auto-heals from .bak",
       "Passed": true,
-      "DurationMs": 17,
+      "DurationMs": 26,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -712,7 +712,7 @@
       "Tier": 2,
       "Description": "Verifies AtomicStorage heals from .bak when primary file is 0-byte truncated",
       "Passed": true,
-      "DurationMs": 18,
+      "DurationMs": 26,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -762,7 +762,7 @@
       "Tier": 3,
       "Description": "Verifies TreeNode hierarchical projection reflects child process limits and priority correctly",
       "Passed": true,
-      "DurationMs": 4,
+      "DurationMs": 5,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -792,7 +792,7 @@
       "Tier": 4,
       "Description": "Verifies concurrent port-to-PID table queries and churn run safely without locking or deadlocks",
       "Passed": true,
-      "DurationMs": 208,
+      "DurationMs": 209,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -802,7 +802,7 @@
       "Tier": 4,
       "Description": "Verifies multi-threaded simulated packet flow updates counters with exact atomic precision",
       "Passed": true,
-      "DurationMs": 9,
+      "DurationMs": 16,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -812,7 +812,7 @@
       "Tier": 4,
       "Description": "Verifies high-frequency rule, schedule, and priority mutations under concurrent flow evaluation",
       "Passed": true,
-      "DurationMs": 255,
+      "DurationMs": 266,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -822,7 +822,7 @@
       "Tier": 4,
       "Description": "Simulates sudden machine power failure during file save and verifies full automatic state recovery from .bak",
       "Passed": true,
-      "DurationMs": 30,
+      "DurationMs": 28,
       "ErrorMessage": null,
       "StackTrace": null
     },
@@ -832,7 +832,7 @@
       "Tier": 4,
       "Description": "Simulates repeated power blackouts across auto-heal cycles and verifies continuous zero-data-loss recovery",
       "Passed": true,
-      "DurationMs": 62,
+      "DurationMs": 74,
       "ErrorMessage": null,
       "StackTrace": null
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -41,6 +41,7 @@ public partial class StatsManagerWindow : Window
     private DateTime _activeStart;
     private DateTime _activeEnd;
     private bool _isHourlyMode = true;
+    private readonly System.Windows.Threading.DispatcherTimer _liveRefreshTimer;
 
     // Palette for horizontal ranking bars
     private static readonly Color[] Palette = new[]
@@ -64,10 +65,27 @@ public partial class StatsManagerWindow : Window
         CustomStartBox.Text = DateTime.UtcNow.AddDays(-7).ToString("yyyy-MM-dd");
         CustomEndBox.Text = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
+        _liveRefreshTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2)
+        };
+        _liveRefreshTimer.Tick += (s, e) =>
+        {
+            if (CustomStartBox != null && CustomStartBox.IsFocused) return;
+            if (CustomEndBox != null && CustomEndBox.IsFocused) return;
+            RefreshAll();
+        };
+
         Loaded += (s, e) =>
         {
             UpdateLayout();
             RenderTimeSeriesChart();
+            _liveRefreshTimer.Start();
+        };
+
+        Closed += (s, e) =>
+        {
+            _liveRefreshTimer.Stop();
         };
 
         RefreshAll();
@@ -877,7 +895,13 @@ public partial class StatsManagerWindow : Window
             }
         }
 
+        string? selectedApp = (StatsGrid.SelectedItem as StatsManagerRow)?.App;
         StatsGrid.ItemsSource = view;
+        if (selectedApp != null)
+        {
+            var match = view.FirstOrDefault(r => string.Equals(r.App, selectedApp, StringComparison.OrdinalIgnoreCase));
+            if (match != null) StatsGrid.SelectedItem = match;
+        }
     }
 
     private void AppSearch_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();

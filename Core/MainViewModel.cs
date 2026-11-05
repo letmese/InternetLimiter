@@ -198,6 +198,20 @@ public sealed class MainViewModel : Observable, IDisposable
     private int _tick;
     private bool _disposed;
 
+    private long _sessionTotalInBytes;
+    private long _sessionTotalOutBytes;
+    private long _sessionInternetInBytes;
+    private long _sessionInternetOutBytes;
+    private long _sessionLocalInBytes;
+    private long _sessionLocalOutBytes;
+
+    public long SessionTotalInBytes => _sessionTotalInBytes;
+    public long SessionTotalOutBytes => _sessionTotalOutBytes;
+    public long SessionInternetInBytes => _sessionInternetInBytes;
+    public long SessionInternetOutBytes => _sessionInternetOutBytes;
+    public long SessionLocalInBytes => _sessionLocalInBytes;
+    public long SessionLocalOutBytes => _sessionLocalOutBytes;
+
     public MainViewModel(
         Collector collector,
         IShaper shaper,
@@ -1849,6 +1863,7 @@ public sealed class MainViewModel : Observable, IDisposable
         var split = new Dictionary<int, (double InetIn, double InetOut, double LocalIn, double LocalOut)>();
 
         var pidsRecordedFromConnections = new HashSet<int>();
+        var connBytesRecorded = new Dictionary<int, (long In, long Out)>();
         foreach (ConnReading conn in sample.Connections)
         {
             TotalIn += conn.InRate;
@@ -1904,14 +1919,16 @@ public sealed class MainViewModel : Observable, IDisposable
             string path = _collector.DisplayName(conn.Pid); if (!string.IsNullOrEmpty(path)) _divertShaper.SetProcessPath(conn.Pid, path);
             if (!string.IsNullOrEmpty(path) && !IsTrafficIgnored(path))
             {
-                pidsRecordedFromConnections.Add(conn.Pid);
                 if (conn.InRate > 0 || conn.OutRate > 0)
                 {
+                    pidsRecordedFromConnections.Add(conn.Pid);
+                    long rIn = (long)Math.Max(0, conn.InRate);
+                    long rOut = (long)Math.Max(0, conn.OutRate);
                     string app = System.IO.Path.GetFileName(path).ToLowerInvariant();
-                    _history.Record(app,
-                        (long)Math.Max(0, conn.InRate), (long)Math.Max(0, conn.OutRate), isLocal: isLocalConn);
-                    _remoteIpHistory.Record(app, conn.RemoteIp,
-                        (long)Math.Max(0, conn.InRate), (long)Math.Max(0, conn.OutRate), 1);
+                    _history.Record(app, rIn, rOut, isLocal: isLocalConn);
+                    _remoteIpHistory.Record(app, conn.RemoteIp, rIn, rOut, 1);
+                    connBytesRecorded.TryGetValue(conn.Pid, out var rec);
+                    connBytesRecorded[conn.Pid] = (rec.In + rIn, rec.Out + rOut);
                 }
             }
         }
@@ -1978,6 +1995,7 @@ public sealed class MainViewModel : Observable, IDisposable
             {
                 Processes.Remove(row);
                 _byPid.Remove(pid);
+                _driverPrev.Remove(pid);
                 if (_driver.IsAvailable)
                 {
                     _driver.ClearLimit(pid);
@@ -1990,7 +2008,7 @@ public sealed class MainViewModel : Observable, IDisposable
             _byConn.Remove(key);
         }
 
-        ApplyDriverRates(pidsRecordedFromConnections);
+        ApplyDriverRates(pidsRecordedFromConnections, connBytesRecorded, split);
 
         foreach (var c in Connections)
         {
@@ -2018,9 +2036,27 @@ public sealed class MainViewModel : Observable, IDisposable
 
         foreach (var row in Processes)
         {
-            if (!split.ContainsKey(row.Pid) && (row.InRate + row.OutRate > 0))
+            if (row.InRate + row.OutRate <= 0) continue;
+
+            if (!split.TryGetValue(row.Pid, out var s))
             {
                 split[row.Pid] = (row.InRate, row.OutRate, 0, 0);
+            }
+            else
+            {
+                double connTotalIn = s.InetIn + s.LocalIn;
+                double connTotalOut = s.InetOut + s.LocalOut;
+
+                if (connTotalIn == 0 && connTotalOut == 0)
+                {
+                    split[row.Pid] = (row.InRate, row.OutRate, 0, 0);
+                }
+                else
+                {
+                    double excessIn = Math.Max(0, row.InRate - connTotalIn);
+                    double excessOut = Math.Max(0, row.OutRate - connTotalOut);
+                    split[row.Pid] = (s.InetIn + excessIn, s.InetOut + excessOut, s.LocalIn, s.LocalOut);
+                }
             }
         }
 
@@ -2133,23 +2169,46 @@ public sealed class MainViewModel : Observable, IDisposable
     /// the same counter the throttling logic enforces against, and it covers both
     /// directions. Falls back silently when the driver is absent.
     /// </summary>
-    private void ApplyDriverRates(ISet<int>? pidsRecordedFromConnections = null)
+    private void ApplyDriverRates(ISet<int>? pidsRecordedFromConnections = null, Dictionary<int, (long In, long Out)>? connBytesRecorded = null, Dictionary<int, (double InetIn, double InetOut, double LocalIn, double LocalOut)>? split = null)
     {
         bool useService = IsConnectedToService;
         bool useDivert = _divertShaper.IsAvailable && (DateTime.UtcNow - _divertShaper.LastPacketUtc).TotalSeconds <= 5.0;
         bool useDriver = _driver.IsAvailable;
 
-        if (!useService && !useDivert && !useDriver)
-        {
-            return;
-        }
-
         DateTime now = DateTime.UtcNow;
         double dt = Math.Max(0.2, (now - _driverPrevAt).TotalSeconds);
         _driverPrevAt = now;
 
+        if (!useService && !useDivert && !useDriver)
+        {
+            foreach (ProcessRow row in Processes)
+            {
+                if (row.InRate > 0 || row.OutRate > 0)
+                {
+                    long estIn = (long)(row.InRate * dt);
+                    long estOut = (long)(row.OutRate * dt);
+                    _sessionTotalInBytes += estIn;
+                    _sessionTotalOutBytes += estOut;
+                    bool isLocal = split != null && split.TryGetValue(row.Pid, out var procHalves) && (procHalves.LocalIn + procHalves.LocalOut > 0) && procHalves.InetIn == 0 && procHalves.InetOut == 0;
+                    if (isLocal)
+                    {
+                        _sessionLocalInBytes += estIn;
+                        _sessionLocalOutBytes += estOut;
+                    }
+                    else
+                    {
+                        _sessionInternetInBytes += estIn;
+                        _sessionInternetOutBytes += estOut;
+                    }
+                }
+            }
+            return;
+        }
+
         double sumIn = 0;
         double sumOut = 0;
+        double sumDeltaIn = 0;
+        double sumDeltaOut = 0;
         var compensatingRecorded = new HashSet<int>();
 
         foreach (ProcessRow row in Processes)
@@ -2186,12 +2245,14 @@ public sealed class MainViewModel : Observable, IDisposable
                 continue;
             }
 
-            _driverPrev.TryGetValue(row.Pid, out (ulong In, ulong Out) prev);
-
-            double deltaIn = bytesIn >= prev.In ? bytesIn - prev.In : 0;
-            double deltaOut = bytesOut >= prev.Out ? bytesOut - prev.Out : 0;
-
+            bool isFirstSample = !_driverPrev.TryGetValue(row.Pid, out (ulong In, ulong Out) prev);
             _driverPrev[row.Pid] = (bytesIn, bytesOut);
+
+            double deltaIn = (!isFirstSample && bytesIn >= prev.In) ? bytesIn - prev.In : 0;
+            double deltaOut = (!isFirstSample && bytesOut >= prev.Out) ? bytesOut - prev.Out : 0;
+
+            sumDeltaIn += deltaIn;
+            sumDeltaOut += deltaOut;
 
             // Responsive rate integration: prioritize fresh driver/engine measurements
             if (deltaIn > 0 || deltaOut > 0)
@@ -2230,10 +2291,48 @@ public sealed class MainViewModel : Observable, IDisposable
             sumIn += row.InRate;
             sumOut += row.OutRate;
 
-            // B2: Compensating history record for engine-attributed traffic without connection rows
-            if (row.Pid > 0 && pidsRecordedFromConnections != null && !pidsRecordedFromConnections.Contains(row.Pid))
+            bool isLocalProcess = split != null && split.TryGetValue(row.Pid, out var halves) && (halves.LocalIn + halves.LocalOut > 0) && halves.InetIn == 0 && halves.InetOut == 0;
+
+            if (deltaIn > 0 || deltaOut > 0)
             {
-                RecordCompensatingHistory(row.Pid, row.Path, row.InRate, row.OutRate, pidsRecordedFromConnections, compensatingRecorded);
+                if (isLocalProcess)
+                {
+                    _sessionLocalInBytes += (long)deltaIn;
+                    _sessionLocalOutBytes += (long)deltaOut;
+                }
+                else
+                {
+                    _sessionInternetInBytes += (long)deltaIn;
+                    _sessionInternetOutBytes += (long)deltaOut;
+                }
+                _sessionTotalInBytes += (long)deltaIn;
+                _sessionTotalOutBytes += (long)deltaOut;
+            }
+
+            // Record to History / SQLite
+            if (row.Pid > 0 && !string.IsNullOrEmpty(row.Path) && !IsTrafficIgnored(row.Path))
+            {
+                long recordedConnIn = 0;
+                long recordedConnOut = 0;
+                if (connBytesRecorded != null && connBytesRecorded.TryGetValue(row.Pid, out var recBytes))
+                {
+                    recordedConnIn = recBytes.In;
+                    recordedConnOut = recBytes.Out;
+                }
+
+                long excessIn = Math.Max(0, (long)deltaIn - recordedConnIn);
+                long excessOut = Math.Max(0, (long)deltaOut - recordedConnOut);
+
+                if (excessIn > 0 || excessOut > 0)
+                {
+                    string app = System.IO.Path.GetFileName(row.Path).ToLowerInvariant();
+                    _history.Record(app, excessIn, excessOut, isLocal: isLocalProcess);
+                    compensatingRecorded.Add(row.Pid);
+                }
+                else if (pidsRecordedFromConnections != null && !pidsRecordedFromConnections.Contains(row.Pid))
+                {
+                    RecordCompensatingHistory(row.Pid, row.Path, row.InRate, row.OutRate, pidsRecordedFromConnections, compensatingRecorded);
+                }
             }
         }
 
@@ -2256,6 +2355,19 @@ public sealed class MainViewModel : Observable, IDisposable
 
             TotalIn = Math.Max(sumIn, wireInRate);
             TotalOut = Math.Max(sumOut, wireOutRate);
+
+            if (totalDeltaIn > sumDeltaIn)
+            {
+                long unattrIn = (long)(totalDeltaIn - sumDeltaIn);
+                _sessionTotalInBytes += unattrIn;
+                _sessionInternetInBytes += unattrIn;
+            }
+            if (totalDeltaOut > sumDeltaOut)
+            {
+                long unattrOut = (long)(totalDeltaOut - sumDeltaOut);
+                _sessionTotalOutBytes += unattrOut;
+                _sessionInternetOutBytes += unattrOut;
+            }
         }
         else
         {
@@ -2547,24 +2659,35 @@ public sealed class MainViewModel : Observable, IDisposable
 
         machine.InRate = TotalIn;
         machine.OutRate = TotalOut;
+        machine.GroupInTotal = _sessionTotalInBytes;
+        machine.GroupOutTotal = _sessionTotalOutBytes;
         machine.InFraction = Math.Min(1, machine.InRate / peak);
         machine.OutFraction = Math.Min(1, machine.OutRate / peak);
         machine.Children = Processes.Count + 2;
         machine.IsOnline = true;
+        machine.RefreshDerived();
 
         local.InRate = localIn;
         local.OutRate = localOut;
+        local.GroupInTotal = _sessionLocalInBytes;
+        local.GroupOutTotal = _sessionLocalOutBytes;
         local.InFraction = Math.Min(1, localIn / peak);
         local.OutFraction = Math.Min(1, localOut / peak);
         local.Children = Processes.Count(p => p.Connections > 0);
         local.IsOnline = true;
+        local.RefreshDerived();
 
         internet.InRate = Math.Max(0, TotalIn - localIn);
         internet.OutRate = Math.Max(0, TotalOut - localOut);
+        internet.GroupInTotal = Math.Max(0, _sessionTotalInBytes - _sessionLocalInBytes);
+        internet.GroupOutTotal = Math.Max(0, _sessionTotalOutBytes - _sessionLocalOutBytes);
         internet.InFraction = Math.Min(1, internet.InRate / peak);
         internet.OutFraction = Math.Min(1, internet.OutRate / peak);
         internet.Children = Processes.Count;
         internet.IsOnline = true;
+        internet.RefreshDerived();
+
+        filtersRoot.RefreshDerived();
 
         foreach (TreeNode node in desired)
         {
